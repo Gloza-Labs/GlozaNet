@@ -17,7 +17,7 @@ GlozaNet is in public beta - attempt at your own risk.
 
 ## 📥 How to Download
 
-1. Go to the [Releases](releases) page.
+1. Go to the [Releases](https://github.com/Gloza-Labs/GlozaNet/releases/tag/GlozaNet) page.
 2. Download the latest GlozaNet release from **Assets**.
 3. Open the downloaded file and install or run GlozaNet.
 
