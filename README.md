@@ -1,7 +1,7 @@
-<img width="1920" height="1080" alt="mainshow" src="https://github.com/user-attachments/assets/b31062c4-4ba9-4295-9e24-6d67128ed234" />
-
 # GlozaNet
 GlozaNet is a modern, lightweight web browser focused on speed, simplicity, and a clean, customizable UI. Featuring sleek Gloza-inspired design, smooth tab management, intuitive menus, and a modern browsing experience, it brings a fresh look to everyday web browsing.
+
+<img width="1920" height="1080" alt="mainshow" src="https://github.com/user-attachments/assets/78fffcb8-c4a4-4a70-b9c3-9ed93077f7db" />
 
 # WARNING
 GlozaNet is in public beta - attempt at your own risk.
