@@ -15,6 +15,12 @@ GlozaNet is in public beta - attempt at your own risk.
 - 🔎 **Zoom Controls** — Adjust the zoom level of web pages.
 - 💚 **Gloza Style** — A modern browsing experience designed to fit the Gloza ecosystem.
 
+## 🖥️ Supported systems
+
+- Windows 10/11
+
+**Other OS support coming soon!**
+
 ## 📥 How to Download
 
 1. Go to the [Releases](https://github.com/Gloza-Labs/GlozaNet/releases/tag/GlozaNet) page.
