@@ -37,4 +37,4 @@ To continue, click **More info**, then click **Run anyway**.
 
 ## 💚 Enjoy browsing!
 
-GlozaNet is a public beta in progress, and more improvements and features are coming as development continues.
+GlozaNet is in progress, and more improvements and features are coming as development continues.
