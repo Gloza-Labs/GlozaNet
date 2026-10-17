@@ -20,8 +20,7 @@ GlozaNet is in public beta - attempt at your own risk.
 ## 🖥️ Supported systems
 
 - Windows 10/11
-
-**Other OS support coming soon!**
+- MacOS 12 (Monterey) or higher
 
 ## 📥 How to Download
 
