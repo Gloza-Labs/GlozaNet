@@ -16,6 +16,7 @@ GlozaNet is in public beta - attempt at your own risk.
 - 🖱️ **Context Menus** — Quickly access useful actions with a right-click.
 - 🔎 **Zoom Controls** — Adjust the zoom level of web pages.
 - 💚 **Gloza Style** — A modern browsing experience designed to fit the Gloza ecosystem.
+- 🛡️ **Built-in AdBlocker** - Block unnecesary ads that disturb you right in GlozaNet, no external tools or hard setup needed.
 
 ## 🖥️ Supported systems
 
