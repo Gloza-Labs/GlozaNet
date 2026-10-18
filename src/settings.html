@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Settings</title>
+  <link rel="stylesheet" href="theme.css" />
+  <link rel="stylesheet" href="settings.css" />
+</head>
+<body>
+  <div class="settings-shell">
+
+    <!-- ======================================================================
+         Sidebar navigation (Part 2B). Each button shows one settings page
+         inside the content pane on the right; .settings-page sections below
+         are all real DOM (never re-created), just shown/hidden by
+         settings.js, so every existing control keeps its id/behavior.
+         ====================================================================== -->
+    <nav class="settings-nav" aria-label="Settings categories">
+      <div class="settings-nav-head">
+        <h1>Settings</h1>
+      </div>
+
+      <!-- Settings search (Part 2, §6): filters real, navigable settings —
+           see settings.js's SEARCH_INDEX. Typing shows matching settings in
+           place of the category list; picking one opens its category and
+           focuses the control. -->
+      <div class="settings-search-wrap">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="5"/><path d="M11 11l3.5 3.5"/></svg>
+        <input id="settings-search-input" type="text" placeholder="Search settings" autocomplete="off" aria-label="Search settings" />
+      </div>
+
+      <div class="settings-nav-list" id="settings-nav-list" role="tablist" aria-orientation="vertical">
+        <button type="button" class="settings-nav-item" data-page="general" role="tab" aria-selected="true">
+          <span class="ctx-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.2"/><path d="M1.9 8h12.2M8 1.8c2.1 2 2.1 10.4 0 12.4M8 1.8c-2.1 2-2.1 10.4 0 12.4"/></svg></span>
+          <span class="settings-nav-label">General</span>
+        </button>
+        <button type="button" class="settings-nav-item" data-page="appearance" role="tab" aria-selected="false">
+          <span class="ctx-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M8 1.5a6.5 6.5 0 1 0 0 13c.9 0 1.5-.6 1.5-1.3 0-.4-.2-.7-.4-1-.2-.3-.4-.6-.4-1 0-.7.6-1.2 1.3-1.2H11a3 3 0 0 0 3-3c0-3-2.7-5.5-6-5.5z"/><circle cx="5" cy="7.2" r="0.9" fill="currentColor" stroke="none"/><circle cx="8" cy="5" r="0.9" fill="currentColor" stroke="none"/><circle cx="11" cy="7.2" r="0.9" fill="currentColor" stroke="none"/></svg></span>
+          <span class="settings-nav-label">Appearance</span>
+        </button>
+        <button type="button" class="settings-nav-item" data-page="home-screen" role="tab" aria-selected="false">
+          <span class="ctx-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M2 7.5 8 2l6 5.5"/><path d="M3.5 6.5V13a1 1 0 0 0 1 1H11.5a1 1 0 0 0 1-1V6.5"/></svg></span>
+          <span class="settings-nav-label">Home Screen</span>
+        </button>
+        <button type="button" class="settings-nav-item" data-page="website-appearance" role="tab" aria-selected="false">
+          <span class="ctx-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.5 3.5l1.4 1.4M11.1 11.1l1.4 1.4M12.5 3.5l-1.4 1.4M4.9 11.1l-1.4 1.4"/><circle cx="8" cy="8" r="3"/></svg></span>
+          <span class="settings-nav-label">Website Appearance</span>
+        </button>
+        <button type="button" class="settings-nav-item" data-page="privacy" role="tab" aria-selected="false">
+          <span class="ctx-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M8 1.6L14 4v4.3C14 12.2 11.5 15 8 16c-3.5-1-6-3.8-6-7.7V4z"/></svg></span>
+          <span class="settings-nav-label">Privacy &amp; History</span>
+        </button>
+        <button type="button" class="settings-nav-item" data-page="adblock" role="tab" aria-selected="false">
+          <span class="ctx-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M8 1.6L14 4v4.3C14 12.2 11.5 15 8 16c-3.5-1-6-3.8-6-7.7V4z"/><path d="M5.6 8.2l1.7 1.7 3-3.4"/></svg></span>
+          <span class="settings-nav-label">Ad Blocker</span>
+          <span class="settings-nav-badge" id="adblock-nav-badge" hidden>off</span>
+        </button>
+        <button type="button" class="settings-nav-item" data-page="downloads" role="tab" aria-selected="false">
+          <span class="ctx-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M8 1.5v8M4.5 6l3.5 3.5L11.5 6"/><path d="M2 12.5v1a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-1"/></svg></span>
+          <span class="settings-nav-label">Downloads</span>
+        </button>
+        <button type="button" class="settings-nav-item" data-page="about" role="tab" aria-selected="false">
+          <!-- Same Gloza "G" mark as the hero on the About page / the
+               new-tab page's brand-mark — not wrapped in the usual
+               .ctx-icon chip, since the mark already supplies its own
+               gradient fill rather than being a currentColor stroke icon. -->
+          <span class="nav-icon-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <defs>
+                <linearGradient id="nav-mark-grad" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" style="stop-color: color-mix(in srgb, var(--accent) 55%, white)" />
+                  <stop offset="1" style="stop-color: var(--accent)" />
+                </linearGradient>
+              </defs>
+              <rect x="1.5" y="1.5" width="21" height="21" rx="7" fill="url(#nav-mark-grad)" />
+              <path d="M16.2 8.5A5.5 5.5 0 1 0 17.5 12H12.5" fill="none" stroke="#fff"
+                    stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </span>
+          <span class="settings-nav-label">About</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- ===================================================================== -->
+    <main class="settings-content" role="main">
+
+      <!-- ---------------------------------------------------------------- -->
+      <!-- GENERAL                                                          -->
+      <!-- ---------------------------------------------------------------- -->
+      <section class="settings-page" data-page="general">
+        <header class="settings-page-head">
+          <h2>General</h2>
+          <p>How the address bar and links behave.</p>
+        </header>
+        <div class="settings-items">
+
+          <div class="ctx-item ctx-item-block">
+            <div class="ctx-item-top">
+              <span class="ctx-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><circle cx="7" cy="7" r="5"/><path d="M11 11l3.5 3.5"/></svg></span>
+              <div class="ctx-item-text">
+                <span class="ctx-label" id="search-engine-heading">Default search engine</span>
+                <span class="ctx-desc">Controls the URL bar: typed searches, Enter, suggestions, and autocomplete. Applies immediately.</span>
+              </div>
+            </div>
+            <div class="ctx-item-control">
+              <div class="segmented" role="radiogroup" aria-labelledby="search-engine-heading">
+                <span class="segmented-indicator" aria-hidden="true"></span>
+                <label><input type="radio" name="search-engine" value="google" /><span>Google</span></label>
+                <label><input type="radio" name="search-engine" value="bing" /><span>Bing</span></label>
+                <label><input type="radio" name="search-engine" value="duckduckgo" /><span>DuckDuckGo</span></label>
+                <label><input type="radio" name="search-engine" value="brave" /><span>Brave</span></label>
+              </div>
+            </div>
+          </div>
+
+          <div class="ctx-sep"></div>
+
+          <div class="ctx-item ctx-item-block">
+            <div class="ctx-item-top">
+              <span class="ctx-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M6.5 9.5l3-3"/><path d="M7 4.5l1-1a2.5 2.5 0 0 1 3.5 3.5l-1 1"/><path d="M9 11.5l-1 1A2.5 2.5 0 0 1 4.5 9l1-1"/></svg></span>
+              <div class="ctx-item-text">
+                <span class="ctx-label" id="link-open-heading">Open links</span>
+                <span class="ctx-desc">Where links that ask for a new window (target="_blank") open. Ctrl/middle-click and sign-in popups always get their own tab. Applies immediately.</span>
+              </div>
+            </div>
+            <div class="ctx-item-control">
+              <div class="segmented" role="radiogroup" aria-labelledby="link-open-heading">
+                <span class="segmented-indicator" aria-hidden="true"></span>
+                <label><input type="radio" name="link-open-mode" value="new-tab" /><span>In a new tab</span></label>
+                <label><input type="radio" name="link-open-mode" value="same-tab" /><span>In the same tab</span></label>
+              </div>
+            </div>
+          </div>
+
+          <div class="ctx-sep"></div>
+
+          <div class="ctx-item ctx-item-block">
+            <div class="ctx-item-top">
+              <span class="ctx-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><rect x="1.5" y="3" width="13" height="10" rx="1.5"/><path d="M1.5 6h13"/></svg></span>
+              <div class="ctx-item-text">
+                <span class="ctx-label" id="titlebar-heading">Title bar</span>
+                <span class="ctx-desc">Custom keeps Gloza's tab strip as the title bar, with your OS's own native window-control buttons. Native uses a conventional full OS title bar instead. Applies immediately.</span>
+              </div>
+            </div>
+            <div class="ctx-item-control">
+              <div class="segmented" role="radiogroup" aria-labelledby="titlebar-heading">
+                <span class="segmented-indicator" aria-hidden="true"></span>
+                <label><input type="radio" name="titlebar-mode" value="custom" /><span>Custom</span></label>
+                <label><input type="radio" name="titlebar-mode" value="native" /><span>Native</span></label>
+              </div>
+            </div>
+          </div>
+
+          <div class="ctx-sep"></div>
+
+          <!-- Part 3B: Homepage -->
+          <div class="ctx-item ctx-item-block">
+            <div class="ctx-item-top">
+              <span class="ctx-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M2 7.5L8 2l6 5.5"/><path d="M3.5 6.5V13a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V6.5"/></svg></span>
+              <div class="ctx-item-text">
+                <span class="ctx-label" id="homepage-heading">Homepage</span>
+                <span class="ctx-desc">Used by Startup and New tab below when either is set to "Homepage". Applies immediately.</span>
+              </div>
+            </div>
+            <div class="ctx-item-control">
+              <div class="segmented" role="radiogroup" aria-labelledby="homepage-heading">
+                <span class="segmented-indicator" aria-hidden="true"></span>
+                <label><input type="radio" name="homepage-mode" value="gloza" /><span>Gloza new-tab page</span></label>
+                <label><input type="radio" name="homepage-mode" value="custom" /><span>Custom URL</span></label>
+              </div>
+            </div>
+          </div>
+          <div class="ctx-item ctx-item-block" id="homepage-url-row" hidden>
+            <div class="ctx-item-top">
+              <div class="ctx-item-text">
+                <span class="ctx-label"><label for="homepage-url-input">Custom homepage URL</label></span>
+                <span class="ctx-desc" id="homepage-url-error"></span>
+              </div>
+            </div>
+            <div class="ctx-item-control set-add-row" style="margin:0;">
+              <input type="text" id="homepage-url-input" placeholder="example.com" />
+            </div>
+          </div>
+
+          <div class="ctx-sep"></div>
+
+          <div class="ctx-item ctx-item-block">
+            <div class="ctx-item-top">
+              <span class="ctx-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l2.5 1.5"/></svg></span>
+              <div class="ctx-item-text">
+                <span class="ctx-label" id="startup-heading">When Gloza starts</span>
+                <span class="ctx-desc">What the first window shows when you launch Gloza. Applies immediately, from next launch.</span>
+              </div>
+            </div>
+            <div class="ctx-item-control">
+              <div class="segmented" role="radiogroup" aria-labelledby="startup-heading">
+                <span class="segmented-indicator" aria-hidden="true"></span>
+                <label><input type="radio" name="startup-behavior" value="blank" /><span>New tab page</span></label>
+                <label><input type="radio" name="startup-behavior" value="homepage" /><span>Homepage</span></label>
+                <label><input type="radio" name="startup-behavior" value="restore" /><span>Previous session</span></label>
+              </div>
+            </div>
+          </div>
+
+          <div class="ctx-sep"></div>
+
+          <div class="ctx-item ctx-item-block">
+            <div class="ctx-item-top">
+              <span class="ctx-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><path d="M1.5 5.5h13"/></svg></span>
+              <div class="ctx-item-text">
+                <span class="ctx-label" id="newtab-heading">New tabs</span>
+                <span class="ctx-desc">What a freshly opened tab shows — new-tab button, Ctrl+T, closing your last tab. Applies immediately.</span>
+              </div>
+            </div>
+            <div class="ctx-item-control">
+              <div class="segmented" role="radiogroup" aria-labelledby="newtab-heading">
+                <span class="segmented-indicator" aria-hidden="true"></span>
+                <label><input type="radio" name="newtab-behavior" value="blank" /><span>New tab page</span></label>
+                <label><input type="radio" name="newtab-behavior" value="homepage" /><span>Homepage</span></label>
+              </div>
+            </div>
+          </div>
+
+          <div class="ctx-sep"></div>
+
+          <div class="ctx-item ctx-item-block ctx-item-row">
+            <div class="ctx-item-top">
+              <span class="ctx-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><circle cx="7" cy="7" r="5"/><path d="M11 11l3.5 3.5"/></svg></span>
+              <div class="ctx-item-text">
+                <span class="ctx-label" id="search-suggestions-heading">Search suggestions</span>
+                <span class="ctx-desc">Show live suggestions from your search engine as you type in the address bar. Turning this off stops those requests entirely.</span>
+              </div>
+            </div>
+            <label class="set-switch" aria-labelledby="search-suggestions-heading">
+              <input type="checkbox" id="search-suggestions-toggle" />
+              <span class="set-switch-track" aria-hidden="true"><span class="set-switch-thumb"></span></span>
+            </label>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ---------------------------------------------------------------- -->
+      <!-- APPEARANCE                                                       -->
+      <!-- ---------------------------------------------------------------- -->
+      <section class="settings-page" data-page="appearance" hidden>
+        <header class="settings-page-head">
+          <h2>Appearance</h2>
+          <p>Make Gloza look the way you like.</p>
+        </header>
+        <div class="settings-items">
+
+          <div class="ctx-item ctx-item-block">
+            <div class="ctx-item-top">
+              <span class="ctx-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="M8 2a6 6 0 0 1 0 12z" fill="currentColor" stroke="none" opacity=".35"/></svg></span>
+              <div class="ctx-item-text">
+                <span class="ctx-label"><label for="accent-input">Accent color</label></span>
+                <span class="ctx-desc">Used for highlights, glows and the active tab line.</span>
+              </div>
+            </div>
+            <div class="ctx-item-control accent-control">
+              <input id="accent-input" type="color" />
+              <code id="accent-hex"></code>
+            </div>
+          </div>
+
+          <div class="ctx-sep"></div>
+
+          <div class="ctx-item ctx-item-block">
+            <div class="ctx-item-top">
+              <span class="ctx-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><rect x="2" y="4" width="12" height="8" rx="2.5"/></svg></span>
+              <div class="ctx-item-text">
+                <span class="ctx-label" id="shape-heading">Tab shape</span>
+                <span class="ctx-desc">How the floating tabs are rounded.</span>
+              </div>
+            </div>
+            <div class="ctx-item-control">
+              <div class="segmented" role="radiogroup" aria-labelledby="shape-heading">
+                <span class="segmented-indicator" aria-hidden="true"></span>
+                <label><input type="radio" name="tab-shape" value="rounded-top" /><span>Rounded</span></label>
+                <label><input type="radio" name="tab-shape" value="pill" /><span>Pill</span></label>
+                <label><input type="radio" name="tab-shape" value="square" /><span>Squared</span></label>
+              </div>
+            </div>
+          </div>
+
+          <div class="ctx-sep"></div>
+
+          <div class="ctx-item ctx-item-block">
+            <div class="ctx-item-top">
+              <span class="ctx-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.5 3.5l1.4 1.4M11.1 11.1l1.4 1.4M12.5 3.5l-1.4 1.4M4.9 11.1l-1.4 1.4"/><circle cx="8" cy="8" r="3"/></svg></span>
+              <div class="ctx-item-text">
+                <span class="ctx-label" id="theme-heading">Theme</span>
+                <span class="ctx-desc">Dark or light — both keep the Gloza green accent and Aurora glow.</span>
+              </div>
+            </div>
+            <div class="ctx-item-control">
+              <div class="segmented" role="radiogroup" aria-labelledby="theme-heading">
+                <span class="segmented-indicator" aria-hidden="true"></span>
+                <label><input type="radio" name="theme" value="dark" /><span>Dark</span></label>
+                <label><input type="radio" name="theme" value="light" /><span>Light</span></label>
+              </div>
+            </div>
+          </div>
+
+          <div class="ctx-sep"></div>
+
+          <!-- Part 3B -->
+          <div class="ctx-item ctx-item-block">
+            <div class="ctx-item-top">
+              <span class="ctx-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><circle cx="6.5" cy="6.5" r="4.5"/><path d="M6.5 4.5v4M4.5 6.5h4"/><path d="M9.8 9.8L14 14"/></svg></span>
+              <div class="ctx-item-text">
+                <span class="ctx-label"><label for="default-zoom-select">Default page zoom</label></span>
+                <span class="ctx-desc">Applied to newly opened tabs. Use the in-page zoom controls to change an individual tab afterwards.</span>
+              </div>
+            </div>
+            <div class="ctx-item-control">
+              <select id="default-zoom-select">
+                <option value="50">50%</option>
+                <option value="67">67%</option>
+                <option value="80">80%</option>
+                <option value="90">90%</option>
+                <option value="100">100%</option>
+                <option value="110">110%</option>
+                <option value="125">125%</option>
+                <option value="150">150%</option>
+                <option value="175">175%</option>
+                <option value="200">200%</option>
+                <option value="250">250%</option>
+                <option value="300">300%</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="ctx-sep"></div>
+
+          <!-- Live preview so you can see a change before saving it -->
+          <div class="ctx-item ctx-item-block ctx-item-static">
+            <div class="ctx-item-top">
+              <span class="ctx-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M1.5 12.5V5A1.5 1.5 0 0 1 3 3.5h10A1.5 1.5 0 0 1 14.5 5v7.5"/><path d="M1.5 12.5h13"/></svg></span>
+              <div class="ctx-item-text">
+                <span class="ctx-label">Preview</span>
+              </div>
+            </div>
+            <div class="ctx-item-control">
+              <div id="tab-preview-strip" data-tab-shape="rounded-top">
+                <div id="tab-preview" class="preview-tab active">Example tab</div>
+                <div class="preview-tab">Another tab</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="settings-menu-foot">
+          <button id="save-btn" type="button" class="ctx-item ctx-item-primary ctx-item-save">
+            <span class="ctx-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M8 1v9M4.5 7l3.5 3 3.5-3"/><path d="M1.5 11v2.5a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1V11"/></svg></span>
+            <span class="ctx-label">Save changes</span>
+          </button>
+          <span id="saved-msg" role="status">Saved</span>
+        </div>
+      </section>
+
+      <!-- ---------------------------------------------------------------- -->
+      <!-- HOME SCREEN (Part 2)                                             -->
+      <!-- ---------------------------------------------------------------- -->
+      <section class="settings-page" data-page="home-screen" hidden>
+        <header class="settings-page-head">
+          <h2>Home Screen</h2>
+          <p>Manage the bookmarks on your new-tab page and customize its look.</p>
+        </header>
+        <div class="settings-items">
+
+          <div id="hsb-error-banner" class="set-banner set-banner-error" hidden></div>
+
+          <!-- Show bookmarks toggle -->
+          <div class="ctx-item ctx-item-block ctx-item-row">
+            <div class="ctx-item-top">
+              <span class="ctx-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M2 7.5 8 2l6 5.5"/><path d="M3.5 6.5V13a1 1 0 0 0 1 1H11.5a1 1 0 0 0 1-1V6.5"/></svg></span>
+              <div class="ctx-item-text">
+                <span class="ctx-label" id="hsb-show-heading">Show bookmarks on home screen</span>
+                <span class="ctx-desc">Hides the bookmark cards and empty "+" slots on the new-tab page. Your saved bookmarks and their order are kept either way, and the manager below keeps working.</span>
+              </div>
+            </div>
+            <label class="set-switch" aria-labelledby="hsb-show-heading">
+              <input type="checkbox" id="hsb-show-toggle" />
+              <span class="set-switch-track" aria-hidden="true"><span class="set-switch-thumb"></span></span>
+            </label>
+          </div>
+
+          <div class="ctx-sep"></div>
+
+          <!-- Bookmark manager -->
+          <div class="ctx-item ctx-item-block">
+            <div class="ctx-item-top">
+              <span class="ctx-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M3.5 1.5h9a1 1 0 0 1 1 1V14l-5-3-5 3V2.5a1 1 0 0 1 1-1z"/></svg></span>
+              <div class="ctx-item-text">
+                <span class="ctx-label">Home screen bookmarks</span>
+                <span class="ctx-desc" id="hsb-count-desc">Up to 4 bookmarks. Reuses the same list the new-tab page shows.</span>
+              </div>
+            </div>
+            <div class="ctx-item-control">
+              <div class="set-list" id="hsb-bookmark-list"></div>
+              <button type="button" class="ctx-item-save" id="hsb-add-btn" style="position:static;">+ Add bookmark</button>
+            </div>
+          </div>
+
+          <div class="ctx-sep"></div>
+
+          <!-- Background -->
+          <div class="ctx-item ctx-item-block">
+            <div class="ctx-item-top">
+              <span class="ctx-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><circle cx="5.3" cy="6" r="1.2"/><path d="M2.2 11.8 6 8l2.3 2.3L11 7.3l2.8 3.6"/></svg></span>
+              <div class="ctx-item-text">
+                <span class="ctx-label">Background</span>
+                <span class="ctx-desc">Independent of the bookmark grid and the gradient below — changing it never touches either.</span>
+              </div>
+            </div>
+            <div class="ctx-item-control">
+              <div class="hsb-bg-options" id="hsb-bg-options" role="radiogroup" aria-label="Home screen background">
+                <button type="button" class="hsb-bg-swatch" id="hsb-bg-default-btn" data-bg-value="default" title="Default">
+                  <span class="hsb-bg-swatch-fill hsb-bg-swatch-default" aria-hidden="true"></span>
+                  <span class="hsb-bg-swatch-label">Default</span>
+                </button>
+                <!-- Built-in colors are inserted here by settings.js (HOME_BG_COLORS) -->
+              </div>
+              <div class="hsb-bg-custom-row">
+                <button type="button" class="set-text-btn" id="hsb-bg-image-btn">Choose a picture…</button>
+                <span class="hsb-bg-custom-status" id="hsb-bg-custom-status" hidden></span>
+                <button type="button" class="set-text-btn" id="hsb-bg-use-custom-btn" hidden>Use this picture</button>
+              </div>
+              <div id="hsb-bg-preview-wrap" class="hsb-bg-preview-wrap" hidden>
+                <img id="hsb-bg-preview" class="hsb-bg-preview" alt="Selected background preview" />
+              </div>
+            </div>
+          </div>
+
+          <div class="ctx-sep"></div>
+
+          <!-- Top gradient -->
+          <div class="ctx-item ctx-item-block ctx-item-row">
+            <div class="ctx-item-top">
+              <span class="ctx-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M1.5 6c2-3 11-3 13 0" /><path d="M1.5 9.5c2-3 11-3 13 0" /></svg></span>
+              <div class="ctx-item-text">
+                <span class="ctx-label" id="hsb-gradient-heading">Show top green gradient</span>
+                <span class="ctx-desc">The soft Aurora glow at the top of the home screen. Independent of the background and bookmarks above.</span>
+              </div>
+            </div>
+            <label class="set-switch" aria-labelledby="hsb-gradient-heading">
+              <input type="checkbox" id="hsb-gradient-toggle" />
+              <span class="set-switch-track" aria-hidden="true"><span class="set-switch-thumb"></span></span>
+            </label>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- Add/Edit bookmark dialog — the Settings-side counterpart of home.html's
+           hb-dialog, bound to the SAME home-bookmarks:add/update IPC calls and
+           the same URL validation/normalization (main.js's isSafeBookmarkUrl /
+           normalizeBookmarkUrl), so a bookmark edited from either place ends up
+           identical. It's a separate DOM instance only because Settings and the
+           new-tab page are two different renderer pages — see settings.js. -->
+      <div id="hsb-dialog-overlay" class="hsb-dialog-overlay" hidden>
+        <form id="hsb-dialog" class="hsb-dialog" novalidate>
+          <div class="hsb-dialog-head" id="hsb-dialog-title">Add bookmark</div>
+          <div class="hsb-dialog-body">
+            <label class="hsb-field">
+              <span class="hsb-field-label">Name</span>
+              <input id="hsb-field-name" type="text" autocomplete="off" spellcheck="false" maxlength="60" required />
+            </label>
+            <label class="hsb-field">
+              <span class="hsb-field-label">Website URL</span>
+              <input id="hsb-field-url" type="text" autocomplete="off" spellcheck="false" placeholder="example.com" required />
+            </label>
+            <p id="hsb-dialog-error" class="hsb-dialog-error" role="alert" hidden></p>
+          </div>
+          <div class="hsb-dialog-actions">
+            <button type="button" id="hsb-dialog-cancel" class="set-text-btn">Cancel</button>
+            <span class="hsb-dialog-actions-spacer"></span>
+            <button type="submit" id="hsb-dialog-save" class="ctx-item-save" style="position:static;">Save</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- ---------------------------------------------------------------- -->
+      <!-- WEBSITE APPEARANCE (Force dark mode)                             -->
+      <!-- ---------------------------------------------------------------- -->
+      <section class="settings-page" data-page="website-appearance" hidden>
+        <header class="settings-page-head">
+          <h2>Website Appearance</h2>
+          <p>Control how websites themselves are displayed — independent of Gloza's own theme.</p>
+        </header>
+        <div class="settings-items">
+
+          <div class="ctx-item ctx-item-block ctx-item-row">
+            <div class="ctx-item-top">
+              <span class="ctx-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M8 1.5a6.5 6.5 0 1 0 0 13z" fill="currentColor" stroke="none"/><circle cx="8" cy="8" r="6.2"/></svg></span>
+              <div class="ctx-item-text">
+                <span class="ctx-label" id="force-dark-heading">Force dark mode on websites</span>
+                <span class="ctx-desc">Darkens pages that don't offer their own dark theme. Sites that already support dark mode are left alone. This can't work perfectly on every page — some may look odd; use a site exception below if one does.</span>
+              </div>
+            </div>
+            <label class="set-switch" aria-labelledby="force-dark-heading">
+              <input type="checkbox" id="force-dark-toggle" />
+              <span class="set-switch-track" aria-hidden="true"><span class="set-switch-thumb"></span></span>
+            </label>
+          </div>
+
+          <div class="ctx-sep"></div>
+
+          <div class="ctx-item ctx-item-block">
+            <div class="ctx-item-top">
+              <span class="ctx-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M3 8a5 5 0 0 1 5-5M8 3a5 5 0 0 1 5 5M13 8a5 5 0 0 1-5 5M8 13a5 5 0 0 1-5-5"/></svg></span>
+              <div class="ctx-item-text">
+                <span class="ctx-label">Site exceptions</span>
+                <span class="ctx-desc">Websites where forced dark mode is turned off, even while the setting above is on.</span>
+              </div>
+            </div>
+            <div class="ctx-item-control">
+              <div class="set-add-row">
+                <input type="text" id="dark-exception-input" placeholder="example.com" aria-label="Add a website exception" />
+                <button type="button" id="dark-exception-add-btn">Add</button>
+              </div>
+              <div class="set-list" id="dark-exceptions-list"></div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ---------------------------------------------------------------- -->
+      <!-- PRIVACY & HISTORY (Part 3A)                                      -->
+      <!-- ---------------------------------------------------------------- -->
+      <section class="settings-page" data-page="privacy" hidden>
+        <header class="settings-page-head">
+          <h2>Privacy &amp; History</h2>
+          <p>What Gloza remembers while you browse, and what it forgets when it closes.</p>
+        </header>
+        <div class="settings-items">
+
+          <div id="privacy-error-banner" class="set-banner set-banner-error" hidden></div>
+
+          <!-- Recording toggle -->
+          <div class="ctx-item ctx-item-block ctx-item-row">
+            <div class="ctx-item-top">
+              <span class="ctx-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M2 8a6 6 0 1 1 6 6"/><path d="M2 8H.5M2 8l2-2M2 8l2 2"/><path d="M8 5v3.3l2.3 1.4"/></svg></span>
+              <div class="ctx-item-text">
+                <span class="ctx-label" id="history-enabled-heading">Save browsing history</span>
+                <span class="ctx-desc">When off, pages you visit stop being added to history. Existing entries are kept until you clear them below.</span>
+              </div>
+            </div>
+            <label class="set-switch" aria-labelledby="history-enabled-heading">
+              <input type="checkbox" id="history-enabled-toggle" />
+              <span class="set-switch-track" aria-hidden="true"><span class="set-switch-thumb"></span></span>
+            </label>
+          </div>
+
+          <div class="ctx-sep"></div>
+
+          <!-- Manage / clear history -->
+          <div class="ctx-item ctx-item-block">
+            <div class="ctx-item-top">
+              <span class="ctx-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h7"/></svg></span>
+              <div class="ctx-item-text">
+                <span class="ctx-label">Browsing history</span>
+                <span class="ctx-desc" id="history-count-desc">—</span>
+              </div>
+            </div>
+            <div class="ctx-item-control">
+              <div class="set-add-row" style="justify-content: flex-start; flex-wrap: wrap;">
+                <button type="button" class="set-text-btn" id="privacy-manage-history-btn">Manage history…</button>
+              </div>
+              <div class="set-add-row" style="justify-content: flex-start; flex-wrap: wrap; margin-top: 6px;">
+                <span class="ctx-desc" style="flex-basis: 100%; margin-bottom: 2px;">Clear a time range — only periods history's timestamps can measure accurately are offered.</span>
+                <button type="button" class="set-text-btn" id="privacy-clear-hour-btn" data-range="hour">Last hour</button>
+                <button type="button" class="set-text-btn" id="privacy-clear-today-btn" data-range="today">Today</button>
+                <button type="button" class="set-text-btn" id="privacy-clear-24h-btn" data-range="24h">Last 24 hours</button>
+                <button type="button" class="set-text-btn" id="privacy-clear-7d-btn" data-range="7d">Last 7 days</button>
+                <button type="button" class="set-text-btn set-text-btn-danger" id="privacy-clear-all-btn" data-range="all">Clear all history</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="ctx-sep"></div>
+
+          <!-- Clear on exit -->
+          <div class="ctx-item ctx-item-block">
+            <div class="ctx-item-top">
+              <span class="ctx-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M8 1.6L14 4v4.3C14 12.2 11.5 15 8 16c-3.5-1-6-3.8-6-7.7V4z"/><path d="M5.6 8.2l1.7 1.7 3-3.4"/></svg></span>
+              <div class="ctx-item-text">
+                <span class="ctx-label">Clear on exit</span>
+                <span class="ctx-desc">Automatically clear the selected data every time Gloza fully closes. Each one is independent — nothing you don't select is touched.</span>
+              </div>
+            </div>
+            <div class="ctx-item-control">
+              <div class="set-list">
+                <label class="set-list-row set-checkbox-row">
+                  <input type="checkbox" id="exit-clear-history" class="exit-clear-check" data-key="history" />
+                  <div class="set-list-main">
+                    <span class="set-list-title">Browsing history</span>
+                  </div>
+                </label>
+                <label class="set-list-row set-checkbox-row">
+                  <input type="checkbox" id="exit-clear-downloads" class="exit-clear-check" data-key="downloads" />
+                  <div class="set-list-main">
+                    <span class="set-list-title">Download history</span>
+                    <span class="set-list-meta">Removes download records only — your downloaded files are never deleted.</span>
+                  </div>
+                </label>
+                <label class="set-list-row set-checkbox-row">
+                  <input type="checkbox" id="exit-clear-cookies" class="exit-clear-check" data-key="cookies" />
+                  <div class="set-list-main">
+                    <span class="set-list-title">Cookies and website data</span>
+                    <span class="set-list-meta">Signs you out of most sites you're logged into.</span>
+                  </div>
+                </label>
+                <label class="set-list-row set-checkbox-row">
+                  <input type="checkbox" id="exit-clear-cache" class="exit-clear-check" data-key="cache" />
+                  <div class="set-list-main">
+                    <span class="set-list-title">Cached website data</span>
+                    <span class="set-list-meta">Sites may load a little slower just after Gloza restarts.</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ---------------------------------------------------------------- -->
+      <!-- AD BLOCKER                                                       -->
+      <!-- ---------------------------------------------------------------- -->
+      <section class="settings-page" data-page="adblock" hidden>
+        <header class="settings-page-head">
+          <h2>Ad Blocker</h2>
+          <p>Gloza's built-in ad and tracker blocker — no extension required.</p>
+        </header>
+        <div class="settings-items">
+
+          <div id="adblock-error-banner" class="set-banner set-banner-error" hidden></div>
+
+          <div class="ctx-item ctx-item-block ctx-item-row">
+            <div class="ctx-item-top">
+              <span class="ctx-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M8 1.6L14 4v4.3C14 12.2 11.5 15 8 16c-3.5-1-6-3.8-6-7.7V4z"/><path d="M5.6 8.2l1.7 1.7 3-3.4"/></svg></span>
+              <div class="ctx-item-text">
+                <span class="ctx-label" id="adblock-enabled-heading">Block ads and trackers</span>
+                <span class="ctx-desc" id="adblock-enabled-desc">Blocks matching requests browser-wide, using Gloza's own filtering engine.</span>
+              </div>
+            </div>
+            <label class="set-switch" aria-labelledby="adblock-enabled-heading">
+              <input type="checkbox" id="adblock-enabled-toggle" />
+              <span class="set-switch-track" aria-hidden="true"><span class="set-switch-thumb"></span></span>
+            </label>
+          </div>
+
+          <div class="ctx-sep"></div>
+
+          <!-- YouTube ad blocking: two independent methods -->
+          <div class="ctx-item ctx-item-block">
+            <div class="ctx-item-top">
+              <span class="ctx-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M1.5 5.2c.2-1 1-1.7 2-1.8C5 3.2 8 3.2 8 3.2s3 0 4.5.2c1 .1 1.8.8 2 1.8.2 1 .2 2.8.2 2.8s0 1.8-.2 2.8c-.2 1-1 1.7-2 1.8-1.5.2-4.5.2-4.5.2s-3 0-4.5-.2c-1-.1-1.8-.8-2-1.8C1.3 9.8 1.3 8 1.3 8s0-1.8.2-2.8z"/><path d="M6.5 6l3 2-3 2z"/></svg></span>
+              <div class="ctx-item-text">
+                <span class="ctx-label">YouTube ad blocking</span>
+                <span class="ctx-desc">Two independent methods. You can run either alone or both together — turning one off never turns off the other.</span>
+              </div>
+            </div>
+            <div class="ctx-item-control">
+              <div class="set-list-row">
+                <label class="set-switch" aria-labelledby="adblock-method1-heading">
+                  <input type="checkbox" id="adblock-method1-toggle" />
+                  <span class="set-switch-track" aria-hidden="true"><span class="set-switch-thumb"></span></span>
+                </label>
+                <div class="set-list-main">
+                  <span class="set-list-title" id="adblock-method1-heading">Method 1 — Network filter blocking</span>
+                  <span class="set-list-meta" id="adblock-method1-meta">Blocks YouTube's ad/tracking requests (and third-party ad networks) at the network level, via the filter lists below.</span>
+                </div>
+              </div>
+              <div class="set-list-row">
+                <label class="set-switch" aria-labelledby="adblock-method2-heading">
+                  <input type="checkbox" id="adblock-method2-toggle" />
+                  <span class="set-switch-track" aria-hidden="true"><span class="set-switch-thumb"></span></span>
+                </label>
+                <div class="set-list-main">
+                  <span class="set-list-title" id="adblock-method2-heading">Method 2 — YouTube-specific blocking</span>
+                  <span class="set-list-meta" id="adblock-method2-meta">A YouTube-specific layer: strips ad data from the player response before it loads (so most ads never get scheduled at all), and auto-clicks the native Skip button / hides ad overlays as a fallback, in the main player and embedded players.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="ctx-sep"></div>
+
+          <!-- Statistics -->
+          <div class="ctx-item ctx-item-block">
+            <div class="ctx-item-top">
+              <span class="ctx-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M2 13.5h12M4.5 13.5v-5M8 13.5v-8M11.5 13.5v-3"/></svg></span>
+              <div class="ctx-item-text">
+                <span class="ctx-label">Statistics</span>
+                <span class="ctx-desc">Requests blocked so far. Resetting clears the counts shown here, not your filter lists or exceptions.</span>
+              </div>
+            </div>
+            <div class="ctx-item-control">
+              <div class="set-stats-grid">
+                <div class="set-stat-card"><span class="set-stat-value" id="adblock-stat-session">0</span><span class="set-stat-label">This session</span></div>
+                <div class="set-stat-card"><span class="set-stat-value" id="adblock-stat-alltime">0</span><span class="set-stat-label">All time</span></div>
+                <div class="set-stat-card"><span class="set-stat-value" id="adblock-stat-active-rules">0</span><span class="set-stat-label">Active filter rules</span></div>
+              </div>
+              <button type="button" class="set-text-btn set-text-btn-danger" id="adblock-reset-stats-btn">Reset statistics</button>
+            </div>
+          </div>
+
+          <div class="ctx-sep"></div>
+
+          <!-- Filter lists -->
+          <div class="ctx-item ctx-item-block">
+            <div class="ctx-item-top">
+              <span class="ctx-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h7"/></svg></span>
+              <div class="ctx-item-text">
+                <span class="ctx-label">Filter lists</span>
+                <span class="ctx-desc">The rule sets protection is built from. Disabling a list stops enforcing its rules immediately.</span>
+              </div>
+            </div>
+            <div class="ctx-item-control">
+              <div class="set-list" id="adblock-lists"></div>
+              <div class="set-add-row" style="justify-content: flex-end;">
+                <button type="button" class="set-text-btn" id="adblock-update-all-btn">Update all now</button>
+                <button type="button" class="set-text-btn" id="adblock-restore-defaults-btn">Restore defaults</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="ctx-sep"></div>
+
+          <!-- Site exceptions -->
+          <div class="ctx-item ctx-item-block">
+            <div class="ctx-item-top">
+              <span class="ctx-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M3 8a5 5 0 0 1 5-5M8 3a5 5 0 0 1 5 5M13 8a5 5 0 0 1-5 5M8 13a5 5 0 0 1-5-5"/></svg></span>
+              <div class="ctx-item-text">
+                <span class="ctx-label">Website exceptions</span>
+                <span class="ctx-desc">Sites where protection is paused. Add one by hostname, or toggle it from the shield button while visiting the site.</span>
+              </div>
+            </div>
+            <div class="ctx-item-control">
+              <div class="set-add-row">
+                <input type="text" id="adblock-exception-input" placeholder="example.com" aria-label="Add a website exception" />
+                <button type="button" id="adblock-exception-add-btn">Add</button>
+              </div>
+              <div class="set-list" id="adblock-exceptions-list"></div>
+              <button type="button" class="set-text-btn set-text-btn-danger" id="adblock-clear-exceptions-btn">Clear all exceptions</button>
+            </div>
+          </div>
+
+          <div class="ctx-sep"></div>
+
+          <!-- Diagnostics (Part 2 §2) -->
+          <div class="ctx-item ctx-item-block ctx-item-row">
+            <div class="ctx-item-top">
+              <span class="ctx-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.5 3.5l1.4 1.4M11.1 11.1l1.4 1.4M12.5 3.5l-1.4 1.4M4.9 11.1l-1.4 1.4"/><circle cx="8" cy="8" r="3"/></svg></span>
+              <div class="ctx-item-text">
+                <span class="ctx-label" id="adblock-diag-heading">Developer diagnostics</span>
+                <span class="ctx-desc">Shows the most recent filtering decisions — URL, resource type, initiating site, matched rule, and whether the request was allowed or blocked — so you can identify an incorrect decision. Off by default; nothing is recorded or shown to any website while it's off, and the log lives only in memory here.</span>
+              </div>
+            </div>
+            <label class="set-switch" aria-labelledby="adblock-diag-heading">
+              <input type="checkbox" id="adblock-diag-toggle" />
+              <span class="set-switch-track" aria-hidden="true"><span class="set-switch-thumb"></span></span>
+            </label>
+          </div>
+
+          <div class="ctx-item ctx-item-block" id="adblock-diag-panel" hidden>
+            <div class="ctx-item-control" style="margin-left: 0;">
+              <div class="set-diag-toolbar">
+                <span class="set-diag-count" id="adblock-diag-count">0 recent requests</span>
+                <button type="button" class="set-text-btn" id="adblock-diag-refresh-btn">Refresh</button>
+                <button type="button" class="set-text-btn set-text-btn-danger" id="adblock-diag-clear-btn">Clear</button>
+              </div>
+              <div class="set-diag-table" id="adblock-diag-table" role="table" aria-label="Recent ad-blocker decisions"></div>
+            </div>
+          </div>
+
+          <div class="ctx-sep"></div>
+
+          <!-- Advanced / engine info -->
+          <div class="ctx-item ctx-item-block ctx-item-static">
+            <div class="ctx-item-top">
+              <span class="ctx-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.5 3.5l1.4 1.4M11.1 11.1l1.4 1.4M12.5 3.5l-1.4 1.4M4.9 11.1l-1.4 1.4"/><circle cx="8" cy="8" r="3"/></svg></span>
+              <div class="ctx-item-text">
+                <span class="ctx-label">Advanced</span>
+                <span class="ctx-desc" id="adblock-advanced-desc">Cosmetic (element-hiding) rules are applied automatically wherever the active filter lists include them — there's no separate toggle because there's nothing extra to turn on.</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ---------------------------------------------------------------- -->
+      <!-- DOWNLOADS (Part 3B)                                              -->
+      <!-- ---------------------------------------------------------------- -->
+      <section class="settings-page" data-page="downloads" hidden>
+        <header class="settings-page-head">
+          <h2>Downloads</h2>
+          <p>Where files Gloza downloads are saved.</p>
+        </header>
+        <div class="settings-items">
+
+          <div id="downloads-error-banner" class="set-banner set-banner-error" hidden></div>
+
+          <div class="ctx-item ctx-item-block">
+            <div class="ctx-item-top">
+              <span class="ctx-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M2.5 4.5a1 1 0 0 1 1-1h3l1.2 1.5H13a1 1 0 0 1 1 1V12a1 1 0 0 1-1 1H3.5a1 1 0 0 1-1-1z"/></svg></span>
+              <div class="ctx-item-text">
+                <span class="ctx-label">Save location</span>
+                <span class="ctx-desc" id="download-dir-desc">Loading…</span>
+              </div>
+            </div>
+            <div class="ctx-item-control">
+              <button type="button" id="download-dir-browse-btn" class="ctx-item-save" style="position:static;">Change…</button>
+            </div>
+          </div>
+
+          <div class="ctx-sep"></div>
+
+          <div class="ctx-item ctx-item-block ctx-item-row">
+            <div class="ctx-item-top">
+              <span class="ctx-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M4 2.5h6l2.5 2.5V13a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1z"/></svg></span>
+              <div class="ctx-item-text">
+                <span class="ctx-label" id="ask-save-heading">Always ask where to save files</span>
+                <span class="ctx-desc">When on, every download opens a Save As dialog instead of saving straight to the location above.</span>
+              </div>
+            </div>
+            <label class="set-switch" aria-labelledby="ask-save-heading">
+              <input type="checkbox" id="ask-save-toggle" />
+              <span class="set-switch-track" aria-hidden="true"><span class="set-switch-thumb"></span></span>
+            </label>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ---------------------------------------------------------------- -->
+      <!-- ABOUT                                                            -->
+      <!-- ---------------------------------------------------------------- -->
+      <section class="settings-page" data-page="about" hidden>
+        <header class="settings-page-head">
+          <h2>About</h2>
+          <p>Version information and links for GlozaNet.</p>
+        </header>
+        <div class="settings-items">
+
+          <div class="ctx-item ctx-item-block ctx-item-static about-hero">
+            <div class="about-hero-top">
+              <!-- Same Gloza mark as the new-tab page's brand-mark (see home.html) —
+                   kept in sync by hand since both are inline SVG, not a shared asset. -->
+              <span class="about-mark" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <defs>
+                    <linearGradient id="about-mark-grad" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0" style="stop-color: color-mix(in srgb, var(--accent) 55%, white)" />
+                      <stop offset="1" style="stop-color: var(--accent)" />
+                    </linearGradient>
+                  </defs>
+                  <rect x="1.5" y="1.5" width="21" height="21" rx="7" fill="url(#about-mark-grad)" />
+                  <path d="M16.2 8.5A5.5 5.5 0 1 0 17.5 12H12.5" fill="none" stroke="#fff"
+                        stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </span>
+              <div class="about-hero-text">
+                <span class="about-product-name">GlozaNet</span>
+                <span class="about-version" id="about-version">Loading version…</span>
+              </div>
+              <a
+                id="about-whats-new-link"
+                class="about-link about-link-inline"
+                href="#"
+                rel="noopener noreferrer"
+                aria-disabled="true"
+              >What&rsquo;s new</a>
+            </div>
+            <div id="about-version-error" class="set-banner set-banner-error" hidden></div>
+
+            <div class="ctx-sep about-hero-sep"></div>
+
+            <div class="about-hero-release">
+              <div class="about-hero-release-text">
+                <span class="ctx-label">Stay up to date</span>
+                <span class="ctx-desc">Check the official releases page for the newest build of GlozaNet.</span>
+              </div>
+              <a
+                id="about-latest-release-link"
+                class="ctx-item-save about-link"
+                href="https://github.com/Gloza-Labs/GlozaNet/releases"
+                rel="noopener noreferrer"
+                style="position:static; text-decoration:none; display:inline-flex; align-items:center; justify-content:center;"
+              >Get the newest version of GlozaNet here</a>
+            </div>
+          </div>
+
+          <div class="about-footer">
+            <a
+              id="about-gloza-labs-link"
+              class="about-link about-footer-link"
+              href="https://github.com/Gloza-Labs"
+              rel="noopener noreferrer"
+            >More from GlozaLabs</a>
+            <span class="about-copyright">© GlozaNet by GlozaLabs® 2026</span>
+          </div>
+
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="settings.js"></script>
+</body>
+</html>

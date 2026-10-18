@@ -1,0 +1,29 @@
+! YousList (youlist) — bundled seed placeholder
+! Source: https://raw.githubusercontent.com/yous/YousList/master/youtube.txt
+!
+! Added as a fourth filter source (alongside EasyList, EasyPrivacy, and the
+! uBlock-filters high-traffic-site supplement) specifically because it is a
+! list maintained SOLELY for removing ads on YouTube — a narrower, more
+! current, and more frequently-updated target than the general-purpose
+! lists above, which only touch YouTube incidentally. It's the standard,
+! community-maintained answer to "EasyList + uBlock-filters still miss some
+! YouTube ad formats," rather than a homegrown or guessed rule set.
+!
+! Deliberately NOT populated with hand-typed rule bodies here: this
+! project's filter engine (@ghostery/adblocker-electron) validates every
+! list FUNCTIONALLY against real canary requests before activating it (see
+! filterlist-manager.js's validateListText/CANARY_REQUESTS — the same fix
+! that resolved the earlier "0 usable rules" bug), and this list's exact
+! current rule syntax can only be verified against the live, up-to-date
+! copy at the URL above, which requires the network access this sandbox
+! does not have. Shipping guessed/stale rule text here would risk either
+! silently failing validation (if the syntax has moved on) or, worse,
+! looking "accepted" while not actually matching anything current — the
+! exact failure mode this whole investigation started from. Until the
+! first real network update succeeds, this list contributes nothing
+! (harmless no-op, same as any other list with no rules in it); every
+! other list and the existing network/DOM-layer fixes already in this
+! project are completely unaffected by that. The very first filter-list
+! update performed with real network access will fetch and validate the
+! genuine, current list automatically — no code change required for that
+! to take effect.

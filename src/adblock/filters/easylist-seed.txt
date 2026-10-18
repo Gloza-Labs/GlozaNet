@@ -1,0 +1,95 @@
+! Gloza bundled seed list — general advertising
+! -----------------------------------------------------------------------
+! This is a small, hand-curated starter subset covering widely-known ad
+! serving/delivery domains, NOT a redistribution of the full EasyList file
+! (https://easylist.to/easylist/easylist.txt, GPLv3-licensed, "Creative
+! Commons Attribution-ShareAlike" for the list content itself — see
+! https://easylist.to/pages/licence.html). It exists so the blocker has
+! real, working rules from the very first launch, offline, before the
+! filter-list manager has a chance to fetch the real EasyList over the
+! network (see filterlist-manager.js). Once that fetch succeeds, the
+! downloaded EasyList replaces this seed as the "easylist" list's active
+! rules; this file is never presented to the user as "the full EasyList."
+! Syntax: standard Adblock Plus filter syntax (see filter-parser.js for the
+! exact supported subset).
+[Adblock Plus 2.0]
+||doubleclick.net^
+||googlesyndication.com^
+||googleadservices.com^
+||google-analytics.com^$third-party
+||googletagservices.com^
+||googletagmanager.com^$third-party
+||adnxs.com^
+||adsrvr.org^
+||advertising.com^
+||taboola.com^
+||outbrain.com^
+||criteo.com^
+||criteo.net^
+||scorecardresearch.com^
+||quantserve.com^
+||quantcount.com^
+||moatads.com^
+||pubmatic.com^
+||rubiconproject.com^
+||openx.net^
+||casalemedia.com^
+||bluekai.com^
+||mathtag.com^
+||media.net^
+||zedo.com^
+||adform.net^
+||smartadserver.com^
+||yieldmo.com^
+||amazon-adsystem.com^
+||adtech.de^
+||adtechus.com^
+||adroll.com^
+||revcontent.com^
+||mgid.com^
+||bidswitch.net^
+||contextweb.com^
+||yieldlab.net^
+||spotxchange.com^
+||tribalfusion.com^
+||turn.com^
+||rlcdn.com^
+||demdex.net^
+||everesttech.net^
+||serving-sys.com^
+||2mdn.net^
+||adsafeprotected.com^
+||adform.com^
+||exoclick.com^
+||popads.net^
+||propellerads.com^
+||adcolony.com^
+||vungle.com^
+||unityads.unity3d.com^
+||chartboost.com^
+||inner-active.mobi^
+||adcash.com^
+||admob.com^$third-party
+||ads.linkedin.com^
+||ads.twitter.com^
+||ads.pinterest.com^
+||ads.tiktok.com^
+||analytics.tiktok.com^
+||connect.facebook.net^$third-party,script
+||pixel.facebook.com^
+||track.adform.net^
+/adserver/*$third-party
+/adservice/*$third-party
+/ads/*$third-party
+/advert/*$third-party
+/banner_ad*$third-party
+/popunder*$third-party
+! --- generic cosmetic rules (element hiding) ---
+###ad-banner
+###ad-container
+##.ad-banner
+##.ads-wrapper
+##.adsbygoogle
+##div[id^="google_ads_"]
+##div[class^="ad-slot-"]
+##ins.adsbygoogle

@@ -1,0 +1,764 @@
+/* ============================================================================
+   GLOZA START PAGE — home.css
+   ----------------------------------------------------------------------------
+   Colors, radii, spacing and motion come from theme.css.
+
+   Sections
+     1. Page + aurora background
+     2. Brand
+     3. Search field
+     4. Bookmark tiles
+   ============================================================================ */
+
+
+/* ---------- 1. Page + aurora background ----------------------------------- */
+body {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  overflow-x: hidden;
+  background: var(--bg-0);
+}
+
+/* ---- Home Screen Settings: background choice (Part 2) ---------------------
+   Default (no [data-bg-mode], or "default"): body's own --bg-0 above is all
+   that shows — .home-bg stays fully transparent. "color"/"image" paint onto
+   this dedicated layer instead of onto <body> directly so switching back to
+   Default can't ever leave a stray background-image/-color behind on body.
+   Kept independent of the aurora/gradient and of bookmark visibility — see
+   home.js applyPreferences(), which sets each attribute separately. */
+.home-bg {
+  position: fixed;
+  inset: 0;
+  /* Not a negative z-index: body establishes no stacking context of its
+     own, so a negative-z-index fixed child can end up painted BEHIND
+     body's own opaque `background: var(--bg-0)` (set above) instead of in
+     front of it, hiding this layer entirely. z-index: 0 keeps it in the
+     same stacking level as .home-bg-scrim/.aurora below; DOM order (this
+     element comes first in home.html) is what keeps it painted under
+     them. */
+  z-index: 0;
+  background-color: var(--bg-0);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+html[data-bg-mode="color"] .home-bg {
+  background-color: var(--home-bg-color, var(--bg-0));
+}
+html[data-bg-mode="image"] .home-bg {
+  background-image: var(--home-bg-image, none);
+  /* If the image variable somehow isn't set yet, fall back to the plain
+     base color rather than showing nothing. */
+  background-color: var(--bg-0);
+}
+
+/* A soft darkening layer, ONLY present over a custom color/image, so
+   bookmark names, favicons, the plus-card and search field stay readable
+   and keep their intended hover contrast. Invisible (0 opacity) in Default
+   mode — never drawn over the plain aurora look. */
+.home-bg-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: color-mix(in srgb, black 30%, transparent);
+  opacity: 0;
+  transition: opacity var(--dur) var(--ease);
+}
+html[data-bg-mode="color"] .home-bg-scrim,
+html[data-bg-mode="image"] .home-bg-scrim {
+  opacity: 1;
+}
+/* A custom image benefits from a slightly stronger scrim than a flat color
+   (photos have far more local contrast/brightness variation to tame). */
+html[data-bg-mode="image"] .home-bg-scrim {
+  background: color-mix(in srgb, black 42%, transparent);
+}
+
+/* A big soft glow pouring down from the top edge, plus two slowly drifting
+   layers for depth. All CSS gradients — no images, no JS. It sits behind the
+   content (z-index 0) and ignores clicks. "Show top green gradient" in Home
+   Screen Settings toggles it via [data-gradient="off"] — independent of the
+   background/visibility attributes above and below. */
+.aurora {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(90% 55% at 50% -12%, color-mix(in srgb, var(--accent) 36%, transparent), transparent 70%),
+    /* Fades to the page's own base background (not a literal black) so this
+       reads as "aurora settling into the page" in both themes — a flat
+       black vignette here would overpower a light background. */
+    linear-gradient(180deg, transparent 50%, var(--bg-0) 100%);
+}
+html[data-gradient="off"] .aurora { display: none; }
+/* In color/image mode the aurora's own fade-to-(--bg-0) tail would paint a
+   flat rectangle of the base color over the bottom half of the custom
+   background — fine for Default, wrong once a custom background is picked,
+   so that tail is swapped for a fade to transparent instead. The glow
+   itself (first gradient layer) is untouched. */
+html[data-bg-mode="color"] .aurora,
+html[data-bg-mode="image"] .aurora {
+  background:
+    radial-gradient(90% 55% at 50% -12%, color-mix(in srgb, var(--accent) 36%, transparent), transparent 70%),
+    linear-gradient(180deg, transparent 50%, transparent 100%);
+}
+
+.aurora::before,
+.aurora::after {
+  content: "";
+  position: absolute;
+  left: -20%;
+  right: -20%;
+  height: 90%;
+  will-change: transform;
+}
+
+.aurora::before {
+  top: -45%;
+  background:
+    radial-gradient(36% 40% at 22% 55%, var(--aurora-a), transparent 72%),
+    radial-gradient(30% 36% at 56% 45%, var(--aurora-b), transparent 72%),
+    radial-gradient(34% 40% at 84% 58%, var(--aurora-a), transparent 72%);
+  animation: aurora-drift 24s ease-in-out infinite alternate;
+}
+
+.aurora::after {
+  top: -55%;
+  opacity: 0.65;
+  background:
+    radial-gradient(42% 38% at 36% 52%, var(--aurora-b), transparent 70%),
+    radial-gradient(30% 34% at 74% 48%, var(--aurora-a), transparent 70%);
+  animation: aurora-drift 32s ease-in-out infinite alternate-reverse;
+}
+
+.start {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(28px, 6vh, 44px);
+  width: min(720px, 100% - 48px);
+  padding: 6vh 0;
+}
+
+.icon {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+
+/* ---------- 2. Brand ------------------------------------------------------- */
+.brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+  text-align: center;
+  animation: rise var(--dur-slow) var(--ease) backwards;
+}
+
+.brand-mark {
+  width: 52px;
+  height: 52px;
+  margin-bottom: var(--sp-1);
+  filter: drop-shadow(0 10px 26px var(--accent-glow));
+}
+
+/* #brand is the <h1> in home.html */
+#brand {
+  margin: 0;
+  font-size: clamp(38px, 6vw, 58px);
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  /* The page's own text color, cooling slightly toward the accent near the
+     bottom — gradient clipped to the text. Using --text (not a literal
+     white) keeps this legible in light mode, where --text is dark. */
+  background: linear-gradient(180deg, var(--text) 20%, color-mix(in srgb, var(--accent) 30%, var(--text-dim)));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+#tagline {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 15px;
+}
+
+
+/* ---------- 3. Search field ------------------------------------------------ */
+#search-form {
+  width: 100%;
+  animation: rise var(--dur-slow) var(--ease) 90ms backwards;
+}
+
+.search-field {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  height: 60px;
+  padding: 0 8px 0 24px;
+  border-radius: var(--r-pill);
+  background: var(--glass);
+  box-shadow:
+    inset 0 0 0 1px var(--border-strong),
+    0 0 0 0 transparent,
+    0 22px 50px -26px rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(18px) saturate(1.3);
+  transition:
+    background-color var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease);
+}
+
+.search-field:hover { background: var(--glass-hover); }
+
+.search-field:focus-within {
+  background: var(--glass-press);
+  box-shadow:
+    inset 0 0 0 1px var(--accent-mid),
+    0 0 0 4px var(--accent-soft),
+    0 24px 60px -24px var(--accent-glow);
+}
+
+.search-label {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  gap: 14px;
+  height: 100%;
+  color: var(--text-faint);
+  cursor: text;
+  transition: color var(--dur) var(--ease);
+}
+
+.search-field:focus-within .search-label { color: var(--accent-hi); }
+
+#search-input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 17px;
+}
+
+#search-input::placeholder { color: var(--text-faint); }
+#search-input::selection { background: var(--accent-mid); }
+
+/* The one solid-accent element on the page: a small round submit button */
+.search-submit {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 80%, white), var(--accent));
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 8px 20px -8px var(--accent-glow);
+  transition: transform var(--dur) var(--ease), filter var(--dur-fast) var(--ease);
+}
+
+.search-submit .icon { transition: transform var(--dur) var(--ease); }
+
+.search-submit:hover { filter: brightness(1.12); }
+.search-submit:hover .icon { transform: translateX(2px); }
+.search-submit:active { transform: scale(0.92); }
+
+.search-submit:focus-visible {
+  outline: 2px solid var(--accent-hi);
+  outline-offset: 3px;
+}
+
+
+/* ---------- 4. Bookmark tiles ---------------------------------------------- */
+#quick-links {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: var(--sp-3);
+  width: 100%;
+}
+
+/* "Show bookmarks on home screen" OFF (Home Screen Settings, Part 2): hides
+   every saved card, every plus card, and the home-screen-specific "Add
+   bookmark" entry points in one rule, since they're all children of this
+   one grid — nothing else needed per-tile. #quick-links is a direct flex
+   child of .start (display:flex; gap:…), so display:none removes it from
+   flex layout entirely and its gap collapses with it automatically — no
+   leftover empty space. This never touches homeBookmarks/renderSlots() in
+   home.js, so the saved collection, its order and its 4-slot capacity are
+   completely unaffected — re-enabling just un-hides this same grid. */
+html[data-bookmarks-hidden="1"] #quick-links { display: none; }
+
+.tile {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-width: 0;
+  padding: var(--sp-3) var(--sp-4) var(--sp-3) var(--sp-3);
+  border-radius: var(--r-md);
+  background: var(--glass);
+  box-shadow: inset 0 0 0 1px var(--border), 0 14px 30px -18px transparent;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none; /* removes the default link underline */
+  /* fade up, each tile a little after the one before (--i is set in home.js) */
+  animation: rise var(--dur-slow) var(--ease) backwards;
+  animation-delay: calc(180ms + var(--i, 0) * 55ms);
+  transition:
+    transform var(--dur) var(--ease),
+    background-color var(--dur-fast) var(--ease),
+    box-shadow var(--dur) var(--ease);
+}
+
+.tile:hover {
+  transform: translateY(-3px);
+  background: var(--glass-hover);
+  box-shadow: inset 0 0 0 1px var(--accent-mid), 0 14px 30px -18px var(--accent-glow);
+}
+
+.tile:active { transform: translateY(-1px) scale(0.98); }
+
+.tile:focus-visible {
+  outline: 2px solid var(--accent-hi);
+  outline-offset: 2px;
+}
+
+/* Rounded square behind the favicon. Letter shows until the icon loads. */
+.tile-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--glass-hover);
+}
+
+.tile-letter {
+  font-size: 16px;
+  font-weight: 650;
+  color: var(--accent-hi);
+}
+
+.tile-favicon {
+  display: none;
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+.tile-icon.has-favicon .tile-favicon { display: block; }
+.tile-icon.has-favicon .tile-letter  { display: none; }
+
+.tile-name {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* The grid always has exactly 4 slots (see renderSlots() in home.js): a
+   saved-bookmark .tile, or a .tile-plus "add" card in every empty slot. */
+#quick-links.hb-fixed-grid {
+  grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+}
+
+/* "+" card — same shape/size as a real .tile (it reuses that class) so the
+   grid never jitters as cards are added/removed; just a different inside. */
+.tile-plus {
+  justify-content: center;
+  border: 1.5px dashed var(--border-strong);
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-faint);
+  cursor: pointer;
+}
+.tile-plus:hover {
+  border-color: var(--accent-mid);
+  background: var(--glass);
+  color: var(--accent-hi);
+  box-shadow: inset 0 0 0 1px var(--accent-mid), 0 14px 30px -18px var(--accent-glow);
+}
+.tile-plus:active { transform: translateY(-1px) scale(0.98); }
+.tile-plus-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--glass-hover);
+}
+.tile-plus-icon svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.tile-plus-label { font-size: 13px; font-weight: 560; }
+
+/* ---------- 5. Add/Edit bookmark dialog ------------------------------------
+   Self-contained (home.html loads no other stylesheet), but deliberately
+   matches the toolbar's own .modal recipe in styles.css so the dialog looks
+   like the same app, not a bolted-on page. */
+.hb-dialog-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, black 42%, transparent);
+}
+.hb-dialog-overlay.hb-open { display: flex; }
+
+.hb-dialog {
+  width: min(380px, calc(100vw - 48px));
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  border-radius: var(--r-lg);
+  background:
+    linear-gradient(165deg,
+      color-mix(in srgb, var(--bg-2) 94%, var(--accent) 5%) 0%,
+      color-mix(in srgb, var(--bg-2) 97%, white 1%) 45%,
+      var(--bg-2) 100%);
+  border: 1px solid color-mix(in srgb, var(--border-strong) 80%, var(--accent) 12%);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--text) 6%, transparent),
+    0 2px 6px -2px rgba(0, 0, 0, 0.5),
+    0 28px 64px -20px rgba(0, 0, 0, 0.7),
+    0 0 48px -20px var(--accent-glow);
+  backdrop-filter: blur(22px) saturate(1.4);
+  -webkit-backdrop-filter: blur(22px) saturate(1.4);
+  transform: scale(0.95) translateY(6px);
+  opacity: 0;
+}
+@keyframes hb-modal-in {
+  from { opacity: 0; transform: scale(0.95) translateY(6px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes hb-modal-out {
+  from { opacity: 1; transform: scale(1) translateY(0); }
+  to   { opacity: 0; transform: scale(0.96) translateY(4px); }
+}
+.hb-dialog.hb-show { animation: hb-modal-in 180ms var(--ease) forwards; }
+.hb-dialog.hb-hide { animation: hb-modal-out 120ms var(--ease) forwards; pointer-events: none; }
+
+.hb-dialog-head {
+  flex: none;
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13.5px;
+  font-weight: 650;
+  color: var(--text);
+}
+.hb-dialog-body {
+  flex: 1;
+  min-height: 0;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.hb-field { display: flex; flex-direction: column; gap: 6px; }
+.hb-field-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.hb-field input[type="text"] {
+  height: 36px;
+  padding: 0 11px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border-strong);
+  background: var(--bg-1);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+  transition: box-shadow var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+}
+.hb-field input[type="text"]:focus {
+  border-color: var(--accent-mid);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.hb-field input.hb-field-invalid {
+  border-color: color-mix(in srgb, #ff5a5a 65%, var(--border-strong));
+}
+.hb-dialog-error {
+  margin: 0;
+  font-size: 12px;
+  color: #ff8a8a;
+}
+.hb-dialog-actions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px 16px;
+  border-top: 1px solid var(--border);
+}
+.hb-dialog-actions-spacer { flex: 1; }
+.hb-btn {
+  height: 36px;
+  padding: 0 16px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border-strong);
+  background: var(--glass);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease), filter var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+}
+.hb-btn:active { transform: scale(0.97); }
+.hb-btn:disabled { opacity: 0.6; cursor: default; }
+.hb-btn-ghost { background: transparent; color: var(--text-dim); }
+.hb-btn-ghost:hover { background: var(--bg-3); color: var(--text); }
+.hb-btn-primary {
+  background: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 60%, var(--border-strong));
+  color: #fff;
+}
+.hb-btn-primary:hover:not(:disabled) { filter: brightness(1.08); }
+
+/* ---------- 6. Context menu + slide-out submenu ----------------------------
+   Same visual recipe as the toolbar's #ctx-menu/#bm-menu in styles.css,
+   reimplemented locally since home.html doesn't load that stylesheet. */
+.hb-menu-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 600;
+}
+.hb-menu-overlay.hb-open { display: block; }
+/* Submenu's overlay layer — same fix as the toolbar menu's
+   #bm-submenu-overlay in styles.css. Without this, #hb-submenu-overlay
+   shares the plain .hb-menu-overlay rule above: same z-index as
+   #hb-menu-overlay, but later in the DOM, so it paints on top of (and
+   pointer-event-intercepts) the ENTIRE screen while a submenu is open —
+   including the "Move" row and the rest of #hb-menu underneath it. That
+   both breaks real :hover on "Move" (the cursor is technically over this
+   transparent overlay, not the button, so only the JS-added
+   .hb-item-arrow-open class — a gray fill — shows, never the green hover
+   fill) and makes every pointerdown while the submenu is open land on the
+   overlay instead of inside #hb-menu/#hb-submenu, which the document
+   "click outside" listener (see closeBookmarkMenu wiring) then reads as a
+   click outside the whole menu and closes it — reading as "the submenu
+   just closes".
+   Fix: raise it above #hb-menu-overlay, make it pointer-events: none by
+   default so it no longer blocks hover/clicks anywhere, and opt only the
+   submenu panel and its own rows back into receiving pointer events. */
+#hb-submenu-overlay {
+  z-index: 650; /* above #hb-menu-overlay's 600 */
+  pointer-events: none;
+}
+#hb-submenu-overlay .hb-item,
+#hb-submenu-overlay #hb-submenu { pointer-events: auto; }
+
+.hb-menu {
+  --ctx-ox: left;
+  --ctx-oy: top;
+  position: absolute;
+  min-width: 200px;
+  max-width: 300px;
+  padding: 6px;
+  border-radius: var(--r-lg);
+  background:
+    linear-gradient(165deg,
+      color-mix(in srgb, var(--bg-2) 92%, var(--accent) 5%) 0%,
+      color-mix(in srgb, var(--bg-2) 97%, white 1%) 45%,
+      var(--bg-2) 100%);
+  border: 1px solid color-mix(in srgb, var(--border-strong) 80%, var(--accent) 12%);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--text) 6%, transparent),
+    0 2px 6px -2px rgba(0, 0, 0, 0.5),
+    0 18px 44px -14px rgba(0, 0, 0, 0.65),
+    0 0 34px -18px var(--accent-glow);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  overflow: hidden;
+  transform-origin: var(--ctx-ox) var(--ctx-oy);
+  opacity: 0;
+  transform: scale(0.94) translateY(-6px);
+}
+/* Faint directional sheen echoing the toolbar's aurora, anchored to
+   whichever corner the menu grows from — same as #ctx-menu::before /
+   #bm-menu::before in styles.css. Purely decorative. */
+.hb-menu::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(120px 90px at var(--ctx-ox) var(--ctx-oy),
+    color-mix(in srgb, var(--accent) 14%, transparent), transparent 70%);
+  opacity: 0.6;
+  pointer-events: none;
+}
+@keyframes hb-ctx-in {
+  from { opacity: 0; transform: scale(0.94) translateY(-6px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes hb-ctx-out {
+  from { opacity: 1; transform: scale(1) translateY(0); }
+  to   { opacity: 0; transform: scale(0.96) translateY(-3px); }
+}
+.hb-menu.hb-show { animation: hb-ctx-in 150ms var(--ease) forwards; }
+.hb-menu.hb-hide { animation: hb-ctx-out 100ms var(--ease) forwards; pointer-events: none; }
+
+.hb-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin: 1px 0;
+  padding: 7px 10px 7px 16px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--r-sm);
+  transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+  user-select: none;
+  z-index: 1;
+}
+/* Accent "rail" that sweeps in on the focused/hovered row — same affordance
+   as the toolbar menu's .ctx-item::after in styles.css. */
+.hb-item::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 22%;
+  bottom: 22%;
+  width: 2.5px;
+  border-radius: var(--r-pill);
+  background: var(--accent);
+  opacity: 0;
+  transform: scaleY(0.4);
+  transition: opacity var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+}
+.hb-item:hover:not(:disabled), .hb-item:focus-visible {
+  background: color-mix(in srgb, var(--accent) 15%, var(--bg-3));
+  outline: none;
+}
+.hb-item:hover:not(:disabled)::after,
+.hb-item:focus-visible::after {
+  opacity: 1;
+  transform: scaleY(1);
+}
+.hb-item:active:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 26%, var(--bg-3));
+  transform: scale(0.99);
+}
+/* Secondary tier — same treatment as the toolbar bookmark menu's own
+   "Delete" row (openBookmarkContextMenu marks it danger: true, which
+   openLocalMenu maps to .ctx-item-secondary, NOT a red color): pushed back
+   visually rather than painted red, so it doesn't compete with everyday
+   actions. */
+.hb-item-danger { color: var(--text-dim); }
+.hb-item-danger .hb-item-label { font-size: 12.5px; }
+.hb-item-danger:not(:disabled) .hb-item-icon { color: var(--text-faint); }
+.hb-item-danger:hover:not(:disabled), .hb-item-danger:focus-visible { color: var(--text); }
+/* Sized, shaped and highlighted exactly like the toolbar bookmark menu's
+   .ctx-icon (openLocalMenu, styles.css) — including the hover/focus tint on
+   the icon chip itself, not just the row background. */
+.hb-item-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--r-sm);
+  color: var(--text-dim);
+  background: transparent;
+  transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+.hb-item:hover:not(:disabled) .hb-item-icon,
+.hb-item:focus-visible .hb-item-icon {
+  color: var(--accent-hi);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+.hb-item-icon svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.hb-item-label { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hb-item-arrow {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  color: var(--text-faint);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+/* Same look as the toolbar menu's .ctx-item.ctx-item-open-submenu — the
+   whole row stays highlighted while its submenu is open, not just the icon. */
+.hb-item.hb-item-arrow-open { background: var(--glass-hover); color: var(--text); }
+.hb-sep {
+  height: 1px;
+  margin: 5px 8px;
+  background: linear-gradient(90deg, transparent, var(--border-strong) 12%, var(--border-strong) 88%, transparent);
+}
+
+/* ---------- 7. Toast -------------------------------------------------------- */
+.hb-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%) translateY(8px);
+  z-index: 700;
+  padding: 10px 16px;
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--bg-2) 94%, var(--accent) 4%);
+  border: 1px solid var(--border-strong);
+  box-shadow: 0 14px 34px -14px rgba(0, 0, 0, 0.6);
+  color: var(--text);
+  font-size: 12.5px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms var(--ease), transform 160ms var(--ease);
+}
+.hb-toast.hb-toast-show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}

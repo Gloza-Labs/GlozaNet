@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en" data-tab-shape="rounded-top">
+<head>
+  <meta charset="UTF-8" />
+  <title>Gloza</title>
+  <!-- theme.css = shared design tokens, styles.css = this toolbar's layout -->
+  <link rel="stylesheet" href="theme.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!--
+    ICON SPRITE — every icon in the toolbar is defined once here and drawn
+    anywhere with:  <svg class="icon"><use href="#i-name" /></svg>
+    To add an icon, add a <symbol id="i-yourname"> below (24x24 grid, drawn
+    with lines; the .icon class in styles.css handles color and thickness).
+  -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <defs>
+      <linearGradient id="gloza-grad" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" style="stop-color: color-mix(in srgb, var(--accent) 55%, white)" />
+        <stop offset="1" style="stop-color: var(--accent)" />
+      </linearGradient>
+    </defs>
+
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6" /></symbol>
+    <!-- Home button icon, left of Back — a classic roofline-and-door glyph
+         drawn in the same stroked-line style as the rest of the toolbar set. -->
+    <symbol id="i-home" viewBox="0 0 24 24">
+      <path d="M4 11.5 12 4l8 7.5" />
+      <path d="M6 10v8.5a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V10" />
+      <path d="M10 19.5V14h4v5.5" />
+    </symbol>
+    <symbol id="i-forward" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" /></symbol>
+    <symbol id="i-reload" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" /></symbol>
+    <!-- Window chrome controls (minimize / maximize / restore / close) used
+         to be hand-drawn SVG glyphs here, one approximate set per OS. They
+         are gone: in 'custom' Title Bar Mode, main.js now asks the real OS
+         to draw its own native controls directly over #window-controls'
+         old reserved space (macOS traffic lights via `trafficLightPosition`,
+         Windows/Linux via the Window Controls Overlay / `titleBarOverlay`)
+         instead of Gloza faking their appearance — see nativeControlOptions()
+         in main.js and the matching CSS in styles.css. -->
+    <symbol id="i-settings" viewBox="0 0 24 24">
+      <path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3M14 2v4M8 10v4M16 18v4" />
+    </symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7.5" /><path d="m21 21-4.3-4.3" /></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2.5" /><path d="M8 11V7.5a4 4 0 0 1 8 0V11" /></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9.5" /><path d="M2.5 12h19" />
+      <path d="M12 2.5a14.5 14.5 0 0 1 3.8 9.5A14.5 14.5 0 0 1 12 21.5 14.5 14.5 0 0 1 8.2 12 14.5 14.5 0 0 1 12 2.5z" />
+    </symbol>
+    <!-- The Gloza mark: used for our own pages (home, settings) -->
+    <symbol id="i-gloza" viewBox="0 0 24 24">
+      <rect x="1.5" y="1.5" width="21" height="21" rx="7" fill="url(#gloza-grad)" stroke="none" />
+      <path d="M16.2 8.5A5.5 5.5 0 1 0 17.5 12H12.5" fill="none" stroke="#fff" stroke-width="2.2" />
+    </symbol>
+
+    <!-- Tab-list dropdown button, at the far left of the tab strip: a plain
+         downward chevron, matching the rest of Gloza's stroked-line icon set. -->
+    <symbol id="i-tab-list" viewBox="0 0 24 24">
+      <path d="M6 9.5 12 15.5 18 9.5"/>
+    </symbol>
+
+    <symbol id="i-star" viewBox="0 0 24 24">
+      <path d="M12 3.3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17.2l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z" />
+    </symbol>
+    <symbol id="i-star-filled" viewBox="0 0 24 24">
+      <path d="M12 3.3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17.2l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z" fill="currentColor" stroke="none" />
+    </symbol>
+    <symbol id="i-download" viewBox="0 0 24 24">
+      <path d="M12 3v12M7.2 10.4 12 15.2l4.8-4.8" />
+      <path d="M4 17.5v2A1.5 1.5 0 0 0 5.5 21h13a1.5 1.5 0 0 0 1.5-1.5v-2" />
+    </symbol>
+    <symbol id="i-menu-dots" viewBox="0 0 24 24">
+      <circle cx="12" cy="5.5" r="1.7" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="12" r="1.7" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="18.5" r="1.7" fill="currentColor" stroke="none" />
+    </symbol>
+    <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14" /></symbol>
+    <symbol id="i-fullscreen" viewBox="0 0 24 24">
+      <path d="M8.5 3.5h-4a1 1 0 0 0-1 1v4M15.5 3.5h4a1 1 0 0 1 1 1v4M8.5 20.5h-4a1 1 0 0 1-1-1v-4M15.5 20.5h4a1 1 0 0 0 1-1v-4" />
+    </symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24">
+      <path d="M3 6.5A1.5 1.5 0 0 1 4.5 5H9l2 2.5h8.5A1.5 1.5 0 0 1 21 9v8.5A1.5 1.5 0 0 1 19.5 19h-15A1.5 1.5 0 0 1 3 17.5z" />
+    </symbol>
+    <symbol id="i-file" viewBox="0 0 24 24">
+      <path d="M6.5 3h8l5 5v12a1 1 0 0 1-1 1h-12a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" />
+      <path d="M14 3v5h5" />
+    </symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M4.5 12.5 9.5 17.5 19.5 6.5" /></symbol>
+    <symbol id="i-print" viewBox="0 0 24 24"><path d="M7 9V4h10v5"/><path d="M7 17H5a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-2"/><path d="M7 14h10v6H7z"/></symbol>
+    <!-- Shield(-check) glyph for the native ad/tracker blocker toolbar
+         button (replaces the old Extensions puzzle piece). A plain shield
+         outline plus a checkmark when protection is actually active on the
+         current site; renderer.js swaps #i-shield / #i-shield-off and
+         toggles .active/.site-disabled on #shield-btn to reflect real
+         backend state (see renderAdblockShieldButton). -->
+    <symbol id="i-shield" viewBox="0 0 24 24">
+      <path d="M12 3.3l7 2.7v5.2c0 4.6-3 8.1-7 9.5-4-1.4-7-4.9-7-9.5V6z" />
+      <path d="M8.8 12.2l2.3 2.3 4.1-4.6" />
+    </symbol>
+    <symbol id="i-shield-off" viewBox="0 0 24 24">
+      <path d="M12 3.3l7 2.7v5.2c0 4.6-3 8.1-7 9.5-4-1.4-7-4.9-7-9.5V6z" />
+      <path d="M9 9l6 6M15 9l-6 6" />
+    </symbol>
+    <symbol id="i-mute" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M15 9l5 5M20 9l-5 5"/></symbol>
+    <!-- Same speaker body as i-mute, but with sound-wave arcs instead of an
+         X — used for a tab that's actually producing audio right now and
+         isn't muted. Clicking either icon toggles mute (see renderer.js). -->
+    <symbol id="i-speaker" viewBox="0 0 24 24">
+      <path d="M4 9v6h4l5 4V5L8 9H4z"/>
+      <path d="M16.5 9.5a4.5 4.5 0 0 1 0 5M19 7a8 8 0 0 1 0 10"/>
+    </symbol>
+    <!-- Browser-menu-only icons (New Window reuses i-window already above). -->
+    <symbol id="i-inspect" viewBox="0 0 24 24">
+      <rect x="3.5" y="4" width="13" height="9" rx="1.3"/>
+      <path d="M7 16.5h6M10 13v3.5"/>
+      <path d="M15 15l5.5 5.5M18 15h3v3"/>
+    </symbol>
+    <symbol id="i-view-source" viewBox="0 0 24 24">
+      <path d="M8.5 7 4 12l4.5 5M15.5 7 20 12l-4.5 5"/>
+    </symbol>
+    <symbol id="i-history" viewBox="0 0 24 24">
+      <path d="M3 12a9 9 0 1 0 3-6.7"/>
+      <path d="M3 4.5V9h4.5"/>
+      <path d="M12 7.5V12l3.5 2"/>
+    </symbol>
+    <symbol id="i-unload" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M9 12h6"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 2v6M8 9h8l-1.3 5.5H9.3L8 9z"/><path d="M12 14.5V22"/></symbol>
+    <symbol id="i-duplicate" viewBox="0 0 24 24"><rect x="3" y="3" width="13" height="13" rx="1.6"/><path d="M8 16v3a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-3"/></symbol>
+    <symbol id="i-move" viewBox="0 0 24 24"><path d="M12 3v18M3 12h18M7 7l-4 5 4 5M17 7l4 5-4 5M7 7l5-4 5 4M7 17l5 4 5-4"/></symbol>
+    <symbol id="i-window" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/></symbol>
+    <symbol id="i-select-all" viewBox="0 0 24 24"><path d="M3 7V4a1 1 0 0 1 1-1h3M17 3h3a1 1 0 0 1 1 1v3M21 17v3a1 1 0 0 1-1 1h-3M7 21H4a1 1 0 0 1-1-1v-3"/><rect x="7" y="7" width="10" height="10" rx="1.5"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24">
+      <path d="M4.5 7h15M9.5 7V4.8A1.3 1.3 0 0 1 10.8 3.5h2.4A1.3 1.3 0 0 1 14.5 4.8V7M18 7l-.8 12.3a1.5 1.5 0 0 1-1.5 1.4H8.3a1.5 1.5 0 0 1-1.5-1.4L6 7" />
+    </symbol>
+    <!-- Used by the bookmark-bar/bookmark/folder context menus (openLocalMenu
+         in renderer.js) — the page-right-click context menu draws its own
+         icons inline instead of from this sprite, but these two names are
+         shared with it (open-tab, bookmark) so reuse the same look. -->
+    <symbol id="i-open-tab" viewBox="0 0 24 24">
+      <rect x="2.5" y="6.5" width="14" height="14" rx="2" />
+      <path d="M8 6.5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-1.5" />
+    </symbol>
+    <symbol id="i-bookmark" viewBox="0 0 24 24">
+      <path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4.4-7 4.4V4.5a1 1 0 0 1 1-1z" />
+    </symbol>
+    <!-- Bookmarks-bar overflow button ("more bookmarks") -->
+    <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" /></symbol>
+  </svg>
+
+  <!--
+    #chrome = everything in this view. Its height is measured automatically and
+    sent to the engine (see the ResizeObserver in renderer.js), so you can
+    change --tab-row-h / --toolbar-h in styles.css without touching main.js.
+
+    renderer.js looks for these ids/classes — keep them if you redesign:
+      #tab-strip (gets one .tab per tab)   #new-tab-btn
+      #back-btn  #forward-btn  #reload-btn  #settings-btn   #address-bar
+  -->
+  <header id="chrome">
+    <!-- Soft glow at the top of the toolbar. Decorative only: it ignores
+         clicks. Lives inside #chrome (not body) so it stays sized to the
+         toolbar strip instead of stretching across the whole window during
+         the brief moments main.js enlarges this view for the context menu. -->
+    <div id="aurora" aria-hidden="true"></div>
+
+    <div id="tab-row">
+      <!-- Absolute left of the strip: opens the tab-list panel (all open tabs). -->
+      <button id="tab-list-btn" class="icon-btn" type="button" title="List all tabs" aria-label="List all tabs" aria-haspopup="true">
+        <svg class="icon" aria-hidden="true"><use href="#i-tab-list" /></svg>
+      </button>
+      <!-- Tab-strip overflow arrows: hidden by default (JS shows them only
+           once tabs no longer all fit — see layoutTabStripArrows in
+           renderer.js), so they never take up space in the common case. -->
+      <button id="tab-strip-start-arrow" class="icon-btn tab-strip-arrow" type="button" title="Scroll tabs left" aria-label="Scroll tabs left" hidden>
+        <svg class="icon" aria-hidden="true"><use href="#i-back" /></svg>
+      </button>
+      <div id="tab-strip" role="tablist" aria-label="Open tabs"></div>
+      <button id="tab-strip-end-arrow" class="icon-btn tab-strip-arrow" type="button" title="Scroll tabs right" aria-label="Scroll tabs right" hidden>
+        <svg class="icon" aria-hidden="true"><use href="#i-forward" /></svg>
+      </button>
+      <!-- Sits directly after the last tab, so it always hugs the tabs -->
+      <button id="new-tab-btn" class="icon-btn" type="button" title="New tab" aria-label="New tab">
+        <svg class="icon" aria-hidden="true"><use href="#i-plus" /></svg>
+      </button>
+
+      <!--
+        The rest of #tab-row (empty space to the right of New Tab) moves the
+        window on drag and dismisses the URL dropdown on a plain click — both
+        implemented by hand in renderer.js (not -webkit-app-region: drag; see
+        the comment on #tab-row in styles.css for why).
+
+        There is no #window-controls element anymore: Close/Minimize/
+        Maximize/Restore (and, on macOS, the traffic lights) are now real
+        OS-native controls that Electron draws directly over this row's
+        reserved right-hand (left-hand on macOS) edge — see
+        nativeControlOptions() in main.js. #tab-row just reserves the space
+        in CSS (styles.css: #tab-row padding-inline-end on Windows/Linux via
+        env(titlebar-area-*), a fixed inset on macOS) and otherwise knows
+        nothing about them.
+      -->
+    </div>
+
+    <div id="toolbar">
+      <button id="home-btn" class="icon-btn" type="button" title="Home" aria-label="Home">
+        <svg class="icon" aria-hidden="true"><use href="#i-home" /></svg>
+      </button>
+      <button id="back-btn" class="icon-btn" type="button" title="Back" aria-label="Back">
+        <svg class="icon" aria-hidden="true"><use href="#i-back" /></svg>
+      </button>
+      <button id="forward-btn" class="icon-btn" type="button" title="Forward" aria-label="Forward">
+        <svg class="icon" aria-hidden="true"><use href="#i-forward" /></svg>
+      </button>
+      <button id="reload-btn" class="icon-btn" type="button" title="Reload" aria-label="Reload">
+        <svg class="icon" aria-hidden="true"><use href="#i-reload" /></svg>
+      </button>
+
+      <!-- A <label> around the input means clicking the icon or the padding focuses the input -->
+      <label class="address-wrap">
+        <button id="zoom-pill" type="button" title="Reset zoom" aria-label="Reset zoom to 100%" hidden>100%</button>
+        <svg id="address-icon" class="icon address-icon" aria-hidden="true"><use href="#i-search" /></svg>
+        <input
+          id="address-bar"
+          type="text"
+          placeholder="Search or enter address"
+          aria-label="Address bar"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </label>
+
+      <button id="bookmark-btn" class="icon-btn" type="button" title="Bookmark this page" aria-label="Bookmark this page" aria-pressed="false">
+        <svg class="icon" aria-hidden="true"><use href="#i-star" /></svg>
+      </button>
+
+      <!-- Native ad/tracker-blocker shield button (Part 2). Lives in the
+           slot the old Extensions puzzle-piece button used to occupy, right
+           before Downloads. renderer.js keeps its icon/color in sync with
+           the REAL backend status (adblock:getStatus / adblock:updated) —
+           never a hardcoded "on" state. -->
+      <button id="shield-btn" class="icon-btn" type="button" title="Ad blocker" aria-label="Ad blocker" aria-haspopup="true">
+        <svg class="icon" aria-hidden="true"><use id="shield-btn-icon" href="#i-shield" /></svg>
+        <span id="shield-btn-badge" class="badge" hidden></span>
+      </button>
+
+      <button id="downloads-btn" class="icon-btn" type="button" title="Downloads" aria-label="Downloads" aria-haspopup="true">
+        <svg class="icon" aria-hidden="true"><use href="#i-download" /></svg>
+        <span id="downloads-badge" class="badge" hidden></span>
+      </button>
+
+      <button id="settings-btn" class="icon-btn" type="button" title="Menu" aria-label="Browser menu" aria-haspopup="true">
+        <svg class="icon" aria-hidden="true"><use href="#i-menu-dots" /></svg>
+      </button>
+    </div>
+
+    <!-- Bookmark toolbar: shows every saved bookmark as a compact chip.
+         renderer.js hides this row entirely when there are no bookmarks. -->
+    <div id="bookmarks-bar" role="toolbar" aria-label="Bookmarks" hidden></div>
+  </header>
+
+  <!-- ==========================================================================
+       Slide-out panel family (tab list / downloads / browser menu). They share
+       one visual language (see .panel-overlay / .panel in styles.css) so they
+       read as one system even though each shows different content.
+       ========================================================================== -->
+  <div class="panel-overlay" id="tab-list-overlay" aria-hidden="true">
+    <div class="panel" id="tab-list-panel" role="menu" aria-label="Open tabs">
+      <div class="panel-header">
+        <span class="panel-title">Open tabs</span>
+      </div>
+      <div class="panel-body" id="tab-list-body"></div>
+    </div>
+  </div>
+
+  <div class="panel-overlay" id="downloads-overlay" aria-hidden="true">
+    <div class="panel panel-wide" id="downloads-panel" role="menu" aria-label="Downloads">
+      <div class="panel-header">
+        <span class="panel-title">Downloads</span>
+        <button id="downloads-clear-btn" class="panel-text-btn" type="button">Clear completed</button>
+      </div>
+      <div class="panel-body" id="downloads-body"></div>
+    </div>
+  </div>
+
+  <!-- Shield (ad blocker) popup, opened from #shield-btn. Every value in
+       here is filled in by renderer.js from the real adblock backend
+       (window.browser.adblock.*) — nothing here is static/fake markup. -->
+  <div class="panel-overlay" id="adblock-overlay" aria-hidden="true">
+    <div class="panel panel-wide shield-panel" id="adblock-panel" role="menu" aria-label="Ad blocker">
+      <div class="panel-header">
+        <span class="panel-title">Ad blocker</span>
+        <label class="shield-global-switch">
+          <input type="checkbox" id="shield-global-toggle" />
+          <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
+        </label>
+      </div>
+      <div class="panel-body" id="adblock-panel-body">
+        <div class="shield-site-row">
+          <div class="shield-site-text">
+            <span id="shield-site-host" class="shield-site-host">—</span>
+            <span id="shield-site-status" class="shield-site-status">Checking…</span>
+          </div>
+          <label class="shield-site-switch-wrap">
+            <input type="checkbox" id="shield-site-toggle" />
+            <span class="switch-track switch-track-sm" aria-hidden="true"><span class="switch-thumb"></span></span>
+          </label>
+        </div>
+
+        <div class="shield-stats-row">
+          <div class="shield-stat">
+            <span class="shield-stat-value" id="shield-stat-site">0</span>
+            <span class="shield-stat-label">Blocked on this site</span>
+          </div>
+          <div class="shield-stat">
+            <span class="shield-stat-value" id="shield-stat-session">0</span>
+            <span class="shield-stat-label">Blocked this session</span>
+          </div>
+          <div class="shield-stat">
+            <span class="shield-stat-value" id="shield-stat-alltime">0</span>
+            <span class="shield-stat-label">Blocked all time</span>
+          </div>
+        </div>
+
+        <div id="shield-error" class="shield-error" hidden></div>
+
+        <div class="shield-lists-line" id="shield-lists-line">Filter lists up to date</div>
+      </div>
+      <div class="shield-panel-foot">
+        <button id="shield-settings-btn" class="panel-text-btn shield-settings-btn" type="button">
+          Ad Blocker Settings
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel-overlay" id="browser-menu-overlay" aria-hidden="true">
+    <div class="panel" id="browser-menu-panel" role="menu" aria-label="Browser menu">
+      <div class="panel-body" id="browser-menu-body"></div>
+    </div>
+  </div>
+
+  <!-- History panel (browser menu → History, or Settings → Privacy &
+       History → "Manage history…"). Same family/visual language as the
+       Downloads panel above; data comes from main.js's history store
+       (history-updated push + history:* IPC — see preload.js). -->
+  <div class="panel-overlay" id="history-overlay" aria-hidden="true">
+    <div class="panel panel-wide panel-xwide" id="history-panel" role="menu" aria-label="History">
+      <div class="panel-header">
+        <span class="panel-title">History</span>
+        <div class="hist-header-actions">
+          <button id="history-select-btn" class="panel-text-btn" type="button">Select</button>
+          <button id="history-clear-btn" class="panel-text-btn" type="button">Clear all</button>
+        </div>
+      </div>
+      <div class="hist-toolbar">
+        <div class="hist-search-wrap">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="5"/><path d="M11 11l3.5 3.5"/></svg>
+          <input id="history-search-input" type="text" placeholder="Search history" autocomplete="off" aria-label="Search history" />
+        </div>
+        <select id="history-range-select" aria-label="Time range to clear">
+          <option value="hour">Last hour</option>
+          <option value="today">Today</option>
+          <option value="24h">Last 24 hours</option>
+          <option value="7d">Last 7 days</option>
+          <option value="all">All history</option>
+        </select>
+        <button id="history-range-clear-btn" class="panel-text-btn" type="button">Clear</button>
+      </div>
+      <div class="hist-select-bar" id="history-select-bar" hidden>
+        <label class="hist-select-all">
+          <input type="checkbox" id="history-select-all-check" />
+          <span>Select all</span>
+        </label>
+        <button id="history-remove-selected-btn" class="panel-text-btn panel-text-btn-danger" type="button" disabled>
+          Remove (<span id="history-selected-count">0</span>)
+        </button>
+      </div>
+      <div class="panel-body" id="history-body"></div>
+    </div>
+  </div>
+
+  <!-- Bookmarks management panel (browser menu → Bookmarks): every bookmark,
+       flattened across folders, with open/delete — the bookmarks bar itself
+       stays the quick-access row; this is the full management surface. -->
+  <div class="panel-overlay" id="bookmarks-manager-overlay" aria-hidden="true">
+    <div class="panel panel-wide" id="bookmarks-manager-panel" role="menu" aria-label="Bookmarks">
+      <div class="panel-header">
+        <span class="panel-title">Bookmarks</span>
+        <button id="bookmarks-manager-add-btn" class="panel-text-btn" type="button">Add current page</button>
+      </div>
+      <div class="panel-body" id="bookmarks-manager-body"></div>
+    </div>
+  </div>
+
+  <!-- Bookmark folder popup: contents of whichever folder was clicked on the
+       bookmark bar (or a nested folder inside it — see renderer.js). Reuses
+       the same panel visual language as the overlays above. -->
+  <div class="panel-overlay" id="bm-folder-overlay" aria-hidden="true">
+    <div class="panel" id="bm-folder-panel" role="menu" aria-label="Bookmark folder">
+      <div class="panel-header" id="bm-folder-header">
+        <span class="panel-title" id="bm-folder-title">Folder</span>
+      </div>
+      <div class="panel-body" id="bm-folder-body"></div>
+    </div>
+  </div>
+
+  <!-- Address-bar dropdown: recent searches + bookmarks, shown under the
+       address bar while it has focus. -->
+  <div class="panel-overlay" id="address-dropdown-overlay" aria-hidden="true">
+    <div class="panel panel-wide" id="address-dropdown-panel" role="listbox" aria-label="Suggestions">
+      <div class="panel-body" id="address-dropdown-body"></div>
+    </div>
+  </div>
+
+  <!-- Generic small floating menu, shared by every bookmark-bar/bookmark/
+       folder right-click context menu (same visual language as the
+       page's #ctx-menu, built dynamically for whatever target was
+       clicked — see openBookmarkMenu in renderer.js). -->
+  <div id="bm-menu-overlay" aria-hidden="true">
+    <div id="bm-menu" role="menu"></div>
+  </div>
+
+  <!-- Submenu layer for the menu above (e.g. tab context menu's "Move" /
+       "Close Multiple Tabs" submenus). Same visual language, positioned
+       beside whichever parent row opened it — see openSubmenu in
+       renderer.js. Kept as its own overlay so it can float outside the
+       parent menu's own clipped bounds. -->
+  <div id="bm-submenu-overlay" aria-hidden="true">
+    <div id="bm-submenu" role="menu"></div>
+  </div>
+
+  <!-- Bookmark creation / edit dialog (star button, or "Edit"/"Rename" from
+       a bookmark's context menu). Centered modal rather than anchored to a
+       button, since it can be triggered from several different places. -->
+  <div class="modal-overlay" id="bookmark-dialog-overlay" aria-hidden="true">
+    <div class="modal" id="bookmark-dialog" role="dialog" aria-modal="true" aria-labelledby="bm-dialog-title">
+      <div class="modal-head">
+        <span id="bm-dialog-title">Bookmark added</span>
+      </div>
+      <div class="modal-body">
+        <label class="modal-field">
+          <span class="modal-field-label" id="bm-dialog-name-label">Name</span>
+          <input id="bm-dialog-name" type="text" autocomplete="off" spellcheck="false" />
+        </label>
+
+        <div class="modal-field">
+          <span class="modal-field-label">Location</span>
+          <button id="bm-dialog-dest-btn" type="button" class="dest-btn" aria-haspopup="true">
+            <svg class="icon" aria-hidden="true"><use href="#i-folder" /></svg>
+            <span id="bm-dialog-dest-label">Bookmarks Toolbar</span>
+            <svg class="icon dest-caret" aria-hidden="true"><use href="#i-forward" /></svg>
+          </button>
+        </div>
+
+        <!-- Destination picker: list of folders (+ "New folder…"), shown
+             under the destination button, built fresh each time it opens. -->
+        <div id="bm-dest-list" class="dest-list" hidden></div>
+
+        <!-- Inline "name the new folder" field, shown instead of the list
+             once "New folder…" is chosen. -->
+        <div id="bm-new-folder-row" class="modal-field" hidden>
+          <span class="modal-field-label">New folder name</span>
+          <div class="new-folder-row">
+            <input id="bm-new-folder-input" type="text" autocomplete="off" spellcheck="false" placeholder="Folder name" />
+            <button id="bm-new-folder-create" type="button" class="modal-btn-sm">Create</button>
+            <button id="bm-new-folder-cancel" type="button" class="modal-btn-sm modal-btn-ghost">Cancel</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button id="bm-dialog-remove" type="button" class="modal-btn modal-btn-ghost" hidden>Remove Bookmark</button>
+        <span class="modal-actions-spacer"></span>
+        <button id="bm-dialog-cancel" type="button" class="modal-btn modal-btn-ghost">Cancel</button>
+        <button id="bm-dialog-save" type="button" class="modal-btn modal-btn-primary">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rename/New-folder prompt: a tiny single-field modal reused for "New
+       folder" from the bookmark-bar context menu and for "Rename". -->
+  <div class="modal-overlay" id="prompt-dialog-overlay" aria-hidden="true">
+    <div class="modal modal-sm" id="prompt-dialog" role="dialog" aria-modal="true" aria-labelledby="prompt-dialog-title">
+      <div class="modal-head"><span id="prompt-dialog-title">New folder</span></div>
+      <div class="modal-body">
+        <label class="modal-field">
+          <span class="modal-field-label" id="prompt-dialog-label">Name</span>
+          <input id="prompt-dialog-input" type="text" autocomplete="off" spellcheck="false" />
+        </label>
+      </div>
+      <div class="modal-actions">
+        <span class="modal-actions-spacer"></span>
+        <button id="prompt-dialog-cancel" type="button" class="modal-btn modal-btn-ghost">Cancel</button>
+        <button id="prompt-dialog-save" type="button" class="modal-btn modal-btn-primary">Create</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Find-in-page bar (Cmd/Ctrl+F — see buildAppMenu in main.js). Not
+       anchored to a button like the panel family above, so it doesn't use
+       openPanel()/closePanel() — it claims/releases the same shared toolbar
+       surface directly (claimSurface('panels')/releaseSurface('panels'),
+       see the find-bar block in renderer.js) and positions itself fixed at
+       the window's top-right corner instead. -->
+  <div class="panel-overlay" id="find-bar-overlay" aria-hidden="true">
+    <div class="panel find-bar" id="find-bar" role="search">
+      <svg class="icon find-bar-icon" aria-hidden="true"><use href="#i-search" /></svg>
+      <input id="find-bar-input" type="text" autocomplete="off" spellcheck="false" placeholder="Find on page" aria-label="Find on page" />
+      <span id="find-bar-count" class="find-bar-count"></span>
+      <button id="find-bar-prev" type="button" class="icon-btn find-bar-btn find-bar-prev-btn" title="Previous match (Shift+Enter)" aria-label="Previous match" disabled>
+        <svg class="icon" aria-hidden="true"><use href="#i-chevron-down" /></svg>
+      </button>
+      <button id="find-bar-next" type="button" class="icon-btn find-bar-btn" title="Next match (Enter)" aria-label="Next match" disabled>
+        <svg class="icon" aria-hidden="true"><use href="#i-chevron-down" /></svg>
+      </button>
+      <button id="find-bar-close" type="button" class="icon-btn find-bar-btn" title="Close (Esc)" aria-label="Close find bar">
+        <svg class="icon" aria-hidden="true"><use href="#i-close" /></svg>
+      </button>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

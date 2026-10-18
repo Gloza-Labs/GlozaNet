@@ -1,0 +1,189 @@
+/* ============================================================================
+   GLOZA DESIGN SYSTEM — theme.css
+   ----------------------------------------------------------------------------
+   Shared by every page in the browser (toolbar, home, settings). Change a
+   value here and the whole browser follows. Page-specific layout lives in
+   styles.css (toolbar), home.css and settings.css.
+
+   Sections
+     1. Tokens: brand + accent
+     2. Tokens: surfaces, borders, text
+     3. Tokens: shape (radii), spacing, shadows
+     4. Tokens: motion + typography
+     5. Tab shape preference (set from the Settings page)
+     6. Base reset
+     7. Shared keyframes
+     8. Reduced-motion
+   ============================================================================ */
+
+/* ---------- 1. Brand + accent ------------------------------------------- */
+/* Gloza ships two intentionally-designed themes, not an inverted palette.
+   renderer.js / home.js / settings.js set data-theme="dark"|"light" on
+   <html> from the saved pref (see applyPrefs()); everything below keys off
+   that attribute so EVERY surface in the browser — toolbar, new-tab page,
+   settings, and every menu/panel/dialog (all of which share this file) —
+   follows the same switch at once. Dark is the default so an old saved
+   prefs.json with no `theme` key (or a brand-new install) still renders
+   exactly as before. */
+:root,
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --gloza: #008200;
+
+  /* --accent is what the UI actually uses. The Settings page can override it
+     at runtime (renderer.js sets it inline on <html>), so every tint below is
+     DERIVED from --accent rather than hardcoded to green. */
+  --accent: var(--gloza);
+  --accent-hi:   color-mix(in srgb, var(--accent) 55%, white);        /* readable on dark: icons, small text */
+  --accent-soft: color-mix(in srgb, var(--accent) 18%, transparent);  /* faint fills, focus halos */
+  --accent-mid:  color-mix(in srgb, var(--accent) 45%, transparent);  /* hairlines, borders */
+  --accent-glow: color-mix(in srgb, var(--accent) 55%, transparent);  /* shadows */
+
+  /* Aurora layers (the soft atmospheric glow at the top of every page) */
+  --aurora-a: color-mix(in srgb, var(--accent) 34%, transparent);
+  --aurora-b: color-mix(in srgb, color-mix(in srgb, var(--accent) 55%, #00a88f) 22%, transparent);
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+
+  --gloza: #008200;
+  /* Light mode leans on a slightly deepened accent so green text/icons stay
+     readable on near-white surfaces (the dark-mode --accent-hi trick of
+     mixing toward white would wash out here instead). */
+  --accent: var(--gloza);
+  --accent-hi:   color-mix(in srgb, var(--accent) 72%, black 6%);
+  --accent-soft: color-mix(in srgb, var(--accent) 12%, transparent);
+  --accent-mid:  color-mix(in srgb, var(--accent) 38%, transparent);
+  --accent-glow: color-mix(in srgb, var(--accent) 30%, transparent);
+
+  --aurora-a: color-mix(in srgb, var(--accent) 16%, transparent);
+  --aurora-b: color-mix(in srgb, color-mix(in srgb, var(--accent) 55%, #00a88f) 11%, transparent);
+}
+
+/* ---------- 2. Surfaces, borders, text ---------------------------------- */
+:root,
+[data-theme="dark"] {
+  --bg-0: #0a0b0b;   /* deepest: page backgrounds */
+  --bg-1: #101212;   /* browser chrome base */
+  --bg-2: #171a1a;   /* raised surfaces */
+  --bg-3: #1f2323;   /* hover */
+
+  /* Translucent "glass" fills — used on top of the aurora so it shows through */
+  --glass:       rgba(255, 255, 255, 0.045);
+  --glass-hover: rgba(255, 255, 255, 0.085);
+  --glass-press: rgba(255, 255, 255, 0.13);
+
+  --border:        rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.13);
+
+  --text:       #eef0ef;
+  --text-dim:   #a9afad;
+  --text-faint: #7d8381;
+
+  --shadow-sm:   0 1px 2px rgba(0, 0, 0, 0.45);
+  --shadow-md:   0 12px 32px -14px rgba(0, 0, 0, 0.75);
+}
+
+[data-theme="light"] {
+  /* Clean light gray / off-white surfaces, not pure white anywhere — a flat
+     #fff background is what makes a "light mode" look like an unfinished
+     inversion rather than a designed theme. */
+  --bg-0: #f3f4f3;
+  --bg-1: #fafbfa;
+  --bg-2: #ffffff;
+  --bg-3: #eef0ee;
+
+  --glass:       rgba(10, 20, 15, 0.035);
+  --glass-hover: rgba(10, 20, 15, 0.065);
+  --glass-press: rgba(10, 20, 15, 0.10);
+
+  --border:        rgba(10, 20, 15, 0.09);
+  --border-strong: rgba(10, 20, 15, 0.16);
+
+  --text:       #15201a;
+  --text-dim:   #4d5852;
+  --text-faint: #7a8580;
+
+  --shadow-sm:   0 1px 2px rgba(20, 30, 25, 0.08);
+  --shadow-md:   0 14px 32px -16px rgba(20, 30, 25, 0.22);
+}
+
+/* ---------- 3. Shape, spacing, shadows ---------------------------------- */
+:root {
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 18px;
+  --r-pill: 999px;
+
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+
+  --shadow-sm:   0 1px 2px rgba(0, 0, 0, 0.45);
+  --shadow-md:   0 12px 32px -14px rgba(0, 0, 0, 0.75);
+  --shadow-glow: 0 10px 26px -12px var(--accent-glow);
+}
+
+/* ---------- 4. Motion + typography -------------------------------------- */
+:root {
+  --ease:     cubic-bezier(0.22, 0.9, 0.3, 1);
+  --dur-fast: 120ms;
+  --dur:      200ms;
+  --dur-slow: 480ms;
+
+  --font: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system,
+          "Inter", "Ubuntu", "Cantarell", "Noto Sans", Roboto, sans-serif;
+}
+
+/* ---------- 5. Tab shape preference --------------------------------------
+   settings → renderer.js sets data-tab-shape="…" on <html>. Add a new shape
+   by adding a block here and a radio button in settings.html. */
+:root,
+[data-tab-shape] {
+  --tab-radius: var(--r-md);
+}
+[data-tab-shape="pill"]   { --tab-radius: var(--r-pill); }
+[data-tab-shape="square"] { --tab-radius: 7px; }
+
+/* ---------- 6. Base reset ----------------------------------------------- */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body { margin: 0; }
+
+body {
+  font-family: var(--font);
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text);
+  background: var(--bg-0);
+  -webkit-font-smoothing: antialiased;
+}
+
+[hidden] { display: none !important; }
+
+/* ---------- 7. Shared keyframes ----------------------------------------- */
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@keyframes aurora-drift {
+  from { transform: translate3d(-4%, 0, 0) scale(1); }
+  to   { transform: translate3d(4%, 5%, 0) scale(1.08); }
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(14px); }
+}
+
+/* ---------- 8. Reduced motion ------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

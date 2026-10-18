@@ -1,0 +1,1351 @@
+/* ============================================================================
+   GLOZA SETTINGS — settings.css
+   ----------------------------------------------------------------------------
+   Colors, radii, spacing and motion come from theme.css.
+
+   The whole page is built on the SAME visual + animation language as the
+   browser's right-click context menu (#ctx-menu / .ctx-item in styles.css —
+   settings.html doesn't load styles.css, so the relevant pieces are
+   reproduced here under the same class names) so Settings reads as part of
+   the same menu/panel family instead of a different "cards" design: glassy
+   blurred surface, accent sheen, accent rail on hover, one flat list of
+   rows. Every row is a SINGLE column — label/description on top, its
+   control stacked directly below, full width — never a left column of text
+   next to a right column of controls.
+
+   Sections
+     1. Page
+     2. Menu surface (ctx-menu look-alike)
+     3. Rows (ctx-item, single column)
+     4. Controls (color swatch, segmented switcher)
+     5. Preview
+     6. Save row
+   ============================================================================ */
+
+
+/* ---------- 1. Page --------------------------------------------------------- */
+html, body {
+  height: 100%;
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(85% 38% at 50% -10%, var(--aurora-a), transparent 72%),
+    radial-gradient(40% 24% at 80% -4%, var(--aurora-b), transparent 70%),
+    var(--bg-0);
+  background-repeat: no-repeat;
+  overflow: hidden;
+}
+
+/* ---------- Shell: sidebar nav + content pane (Part 2 redesign) ------------
+   Part 2 removes the old 980px-max-width "floating card on a black
+   background" shell: the content pane used to be its own bordered,
+   backdrop-blurred card (see the old .settings-content rules this replaces,
+   further down) sitting on an otherwise-empty page. Settings now fills the
+   real browser content area edge to edge — the sidebar stays a distinct
+   navigation surface (so it still reads as "the menu" rather than content),
+   but the main pane is just the page itself: no outer border, no card
+   shadow, no fixed max width. Readability on very wide windows comes from
+   .settings-page capping its OWN inner column (see below), not from
+   constraining the whole shell. ---------------------------------------- */
+.settings-shell {
+  display: flex;
+  align-items: stretch;
+  height: 100vh;
+  width: 100%;
+  margin: 0;
+  padding: 18px 22px;
+  gap: 22px;
+  box-sizing: border-box;
+}
+
+.settings-nav {
+  flex: none;
+  width: 192px;
+  min-width: 140px;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--r-lg);
+  background:
+    linear-gradient(165deg,
+      color-mix(in srgb, var(--bg-2) 92%, var(--accent) 5%) 0%,
+      color-mix(in srgb, var(--bg-2) 97%, white 1%) 45%,
+      var(--bg-2) 100%);
+  border: 1px solid color-mix(in srgb, var(--border-strong) 80%, var(--accent) 12%);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--text) 6%, transparent),
+    0 2px 6px -2px rgba(0, 0, 0, 0.5),
+    0 18px 44px -14px rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  padding: 8px;
+  overflow-y: auto;
+}
+
+.settings-nav-head {
+  padding: 8px 10px 10px;
+}
+.settings-nav-head h1 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.settings-nav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Sidebar entries reuse the real clickable .ctx-item treatment (icon chip,
+   accent hover rail) so navigation reads as part of the same menu family
+   as everything else — same reasoning as .ctx-item-save below. */
+.settings-nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  background: transparent;
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--r-sm);
+  transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+.settings-nav-item::after {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 8px;
+  bottom: 8px;
+  width: 2.5px;
+  border-radius: var(--r-pill);
+  background: var(--accent);
+  opacity: 0;
+  transform: scaleY(0.4);
+  transition: opacity var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+}
+.settings-nav-item:hover {
+  background: color-mix(in srgb, var(--accent) 9%, var(--bg-3));
+  color: var(--text);
+}
+.settings-nav-item:hover::after { opacity: 0.6; transform: scaleY(0.8); }
+.settings-nav-item[aria-selected="true"] {
+  background: color-mix(in srgb, var(--accent) 14%, var(--bg-3));
+  color: var(--text);
+}
+.settings-nav-item[aria-selected="true"]::after { opacity: 1; transform: scaleY(1); }
+.settings-nav-item[aria-selected="true"] .ctx-icon {
+  color: var(--accent-hi);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+.settings-nav-item:focus-visible {
+  outline: 2px solid var(--accent-hi);
+  outline-offset: -2px;
+}
+.settings-nav-label { flex: 1; min-width: 0; }
+
+.settings-nav-badge {
+  flex: none;
+  padding: 1px 6px;
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, #e5484d 22%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #e5484d 50%, var(--border));
+  color: #f3a5a8;
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.settings-nav-badge {
+  flex: none;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: var(--r-pill);
+  background: var(--danger, #e5484d);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+}
+
+/* The main pane itself has NO card: no border, no box-shadow, no
+   backdrop-filter, no gradient fill — it's the plain page background
+   (.settings-shell / body's aurora-on-var(--bg-0) wash) showing straight
+   through, exactly like the brief's "use the actual page background as the
+   primary surface" asks for. It's still a flex column so its header/items/
+   save-row structure works the same as before. */
+.settings-content {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.settings-page {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  animation: ctx-in 160ms var(--ease) forwards;
+}
+
+@keyframes ctx-in {
+  from { opacity: 0; transform: scale(0.98) translateY(-4px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
+
+.settings-page-head {
+  flex: none;
+  /* A left-aligned hairline instead of a card edge is the "subtle
+     separator" the brief asks for in place of one giant bordered box —
+     enough structure to mark where a section starts without framing the
+     whole page in a box. */
+  padding: 4px 0 14px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.settings-page-head h2 {
+  margin: 0 0 3px;
+  font-size: 19px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+.settings-page-head p {
+  margin: 0;
+  color: var(--text-faint);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* Caps the READING width of a page's own content (not the whole shell) so
+   text/rows stay comfortable to scan on an ultra-wide window, without
+   putting a visible frame around anything — just normal max-width-and-
+   breathing-room, the same way a well-set article column works. */
+.settings-page-head,
+.settings-items {
+  max-width: 760px;
+  width: 100%;
+}
+
+.settings-items {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  padding: 2px 2px 24px;
+}
+.settings-items::-webkit-scrollbar { width: 7px; }
+.settings-items::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
+
+.ctx-sep {
+  height: 1px;
+  margin: 4px 10px;
+  background: linear-gradient(90deg,
+    transparent,
+    var(--border-strong) 12%,
+    var(--border-strong) 88%,
+    transparent);
+}
+
+
+/* ---------- 3. Rows (ctx-item, single column) -------------------------------- */
+/* Same base look as the right-click menu's .ctx-item (icon chip, hover
+   rail), but a row here isn't a single clickable action — it's a small
+   block, so it's a <div> not a <button>, and it stacks its control
+   underneath its label instead of ending at the label. */
+.ctx-item-block {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  margin: 1px 0;
+  padding: 8px 10px 10px 10px;
+  border-radius: var(--r-sm);
+  transition: background-color var(--dur-fast) var(--ease);
+}
+
+/* Accent "rail" on the left edge, same affordance as the context menu's
+   hovered/focused row — but since these rows aren't single clickable
+   actions, it lights up for the whole block on hover/focus-within rather
+   than requiring a specific click target. */
+.ctx-item-block::after {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 10px;
+  bottom: 10px;
+  width: 2.5px;
+  border-radius: var(--r-pill);
+  background: var(--accent);
+  opacity: 0;
+  transform: scaleY(0.4);
+  transition: opacity var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+}
+
+.ctx-item-block:hover,
+.ctx-item-block:focus-within {
+  background: color-mix(in srgb, var(--accent) 9%, var(--bg-3));
+}
+.ctx-item-block:hover::after,
+.ctx-item-block:focus-within::after {
+  opacity: 1;
+  transform: scaleY(1);
+}
+
+/* The preview row isn't an input target, so it never needs the hover tint
+   or rail — it would just flicker on accidentally. */
+.ctx-item-static:hover,
+.ctx-item-static:focus-within { background: transparent; }
+.ctx-item-static:hover::after,
+.ctx-item-static:focus-within::after { opacity: 0; transform: scaleY(0.4); }
+
+.ctx-item-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.ctx-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+  border-radius: var(--r-sm);
+  color: var(--accent-hi);
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+}
+.ctx-icon svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  overflow: visible;
+}
+
+.ctx-item-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ctx-label {
+  font-size: 13px;
+  font-weight: 560;
+  color: var(--text);
+  letter-spacing: 0.1px;
+}
+.ctx-label label { cursor: pointer; }
+
+.ctx-desc {
+  color: var(--text-faint);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+/* The control always lives on its OWN row, full width, directly under the
+   label/description — this (not a left/right split) is what keeps every
+   setting a single column. Indented to align under the label text rather
+   than the icon, so it still reads as "belonging" to the row above it. */
+.ctx-item-control {
+  margin-left: 32px;
+}
+
+
+/* ---------- 4. Controls (color swatch, segmented switcher) ------------------- */
+.accent-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#accent-hex {
+  color: var(--text-dim);
+  font-family: ui-monospace, "Cascadia Mono", "SF Mono", Consolas, monospace;
+  font-size: 11.5px;
+  text-transform: uppercase;
+}
+
+/* ---------- Shared combo box / dropdown (Part 2 modernization) --------------
+   The one real <select> in Settings (Default page zoom) was still rendering
+   as a completely unstyled native control — square corners, OS-default
+   background, default caret glyph, no hover/focus treatment — next to rows
+   that otherwise use Gloza's own radii, borders and accent color everywhere
+   else. `appearance: none` removes the native chrome for the CLOSED control
+   (the part CSS can reliably own); the dropdown indicator is a plain inline
+   SVG chevron as a background-image so it recolors correctly in both the
+   dark and light theme via currentColor-less fixed hex + opacity instead of
+   depending on an OS glyph. The open popup list itself is drawn by the OS on
+   most platforms Electron targets (that part isn't reachable from page CSS
+   in every Chromium build), so native keyboard navigation, type-ahead and
+   positioning there are left completely alone rather than reimplemented —
+   see the handoff note on this for the exact boundary. */
+.settings-shell select {
+  appearance: none;
+  -webkit-appearance: none;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+  background-color: var(--bg-3);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M4 6l4 4 4-4' fill='none' stroke='%237d8381' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px 12px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--r-sm);
+  padding: 7px 30px 7px 12px;
+  min-width: 108px;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text) 4%, transparent);
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease);
+}
+.settings-shell select:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border-strong));
+  background-color: color-mix(in srgb, var(--accent) 6%, var(--bg-3));
+}
+.settings-shell select:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.settings-shell select:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+/* Styles the subset of the popup list Chromium honors from page CSS
+   (background/text color of individual <option>s) — the rest of the
+   popup's chrome (border, shadow, corner radius, open/close animation) is
+   the OS's native combobox surface and isn't exposed to page styles on
+   every platform Electron ships on, so it isn't faked here. */
+.settings-shell select option {
+  background-color: var(--bg-2);
+  color: var(--text);
+}
+.settings-shell select:disabled {
+  color: var(--text-faint);
+}
+
+/* Round swatch instead of the default grey rectangle */
+input[type="color"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+  transition: transform var(--dur) var(--ease);
+}
+
+input[type="color"]:hover { transform: scale(1.06); }
+
+input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+
+input[type="color"]::-webkit-color-swatch {
+  border: 2px solid var(--border-strong);
+  border-radius: 50%;
+}
+
+input[type="color"]:focus-visible {
+  outline: 2px solid var(--accent-hi);
+  outline-offset: 3px;
+}
+
+/* Pill-shaped switcher. The real radio buttons are invisible but still
+   cover each segment, so clicking and keyboard (arrow keys) both work.
+   The highlighted segment is a single absolutely-positioned indicator that
+   settings.js slides under the checked label (via transform), rather than
+   each <span> getting its own background — that's what lets it glide from
+   option to option instead of popping between them. Stretches full width
+   of its row (rather than hugging its content) so it stays a clean single
+   column even with four options (Search engine). */
+.segmented {
+  position: relative;
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--r-pill);
+  background: var(--glass-press);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.segmented-indicator {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 0;
+  width: 0;
+  border-radius: var(--r-pill);
+  background: var(--glass-press);
+  box-shadow: inset 0 0 0 1px var(--accent-mid);
+  transform: translateX(0);
+  transition: transform var(--dur) var(--ease), width var(--dur) var(--ease);
+  pointer-events: none;
+}
+
+/* Set once, synchronously, before the indicator's first paint — skips the
+   slide-in animation on page load so it just appears already in place. */
+.segmented-indicator.no-anim { transition: none; }
+
+.segmented label {
+  position: relative;
+  flex: 1;
+  z-index: 1;     /* keeps labels clickable above the sliding indicator */
+}
+
+.segmented input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.segmented span {
+  display: block;
+  padding: 6px 10px;
+  border-radius: var(--r-pill);
+  color: var(--text-dim);
+  font-size: 11.5px;
+  font-weight: 500;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color var(--dur) var(--ease);
+}
+
+.segmented label:hover span { color: var(--text); }
+
+.segmented input:checked + span { color: var(--text); }
+
+.segmented input:focus-visible + span {
+  outline: 2px solid var(--accent-hi);
+  outline-offset: 2px;
+}
+
+
+/* ---------- 5. Preview -------------------------------------------------------- */
+/* Mimics the real tab row so you see exactly what Save will do */
+#tab-preview-strip {
+  display: flex;
+  gap: 6px;
+  padding: 10px;
+  border-radius: var(--r-md);
+  background: var(--bg-1);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.preview-tab {
+  /* Fixed to the SAME height as a real toolbar tab (--tab-h, 34px — see
+     styles.css .tab) rather than sizing to content via padding alone. At
+     the old ~26px content-driven height, --r-md's 14px radius was already
+     more than half the tab's height, so "Rounded" rendered as a full
+     stadium shape — visually identical to "Pill" (999px) even though the
+     two are different --tab-radius values. Matching the real tab's height
+     keeps 14px genuinely "rounded corners" instead of "fully round ends",
+     so all three shapes (Rounded/Pill/Squared) now look distinct here,
+     consistent with how they actually look in the toolbar. Written as a
+     literal 34px, matching styles.css's --tab-h, rather than var(--tab-h)
+     itself: styles.css (the toolbar's own stylesheet) isn't loaded on this
+     page, only theme.css + settings.css are, so that variable would be
+     undefined here. */
+  height: 34px;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  border-radius: var(--tab-radius);
+  background: var(--glass);
+  box-shadow: inset 0 0 0 1px var(--border);
+  color: var(--text-dim);
+  font-size: 11.5px;
+  font-weight: 500;
+  transition:
+    border-radius var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease);
+}
+
+.preview-tab.active {
+  background: var(--glass-hover);
+  box-shadow: inset 0 0 0 1px var(--accent-mid), 0 8px 20px -10px var(--accent-glow);
+  color: var(--text);
+}
+
+
+/* ---------- 6. Save row -------------------------------------------------------- */
+.settings-menu-foot {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 4px 2px;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+  max-width: 760px;
+  width: 100%;
+}
+
+/* The Save action IS a real menu action (a <button>), so it reuses the
+   context menu's actual clickable-row treatment (.ctx-item) rather than
+   the static .ctx-item-block rows above — same family, correct semantics:
+   hover/press states, the accent rail, everything the right-click menu's
+   rows get. */
+.ctx-item-save {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 0;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  box-shadow: inset 0 0 0 1px var(--accent-mid);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--r-sm);
+  transition: background-color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+}
+.ctx-item-save .ctx-icon {
+  width: 22px;
+  height: 22px;
+  color: var(--accent-hi);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+.ctx-item-save .ctx-label {
+  font-weight: 600;
+}
+.ctx-item-save:hover {
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+}
+.ctx-item-save:active {
+  transform: scale(0.98);
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
+}
+.ctx-item-save:focus-visible {
+  outline: 2px solid var(--accent-hi);
+  outline-offset: 2px;
+}
+
+#saved-msg {
+  flex: none;
+  color: var(--accent-hi);
+  font-size: 11.5px;
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+
+#saved-msg.visible {
+  opacity: 1;
+  transform: none;
+}
+
+
+/* ---------- Short windows: allow the row list (only) to scroll ------------- */
+/* .settings-menu itself never scrolls (max-height clamps it to the
+   viewport); if there's ever not enough vertical room for every row at
+   once, .settings-items is the one thing that scrolls, keeping the header
+   and Save row always visible. On any normal window size this never
+   engages — everything fits as one static column. */
+
+/* ============================================================================
+   Part 2 additions: Ad Blocker + Website Appearance pages, and the Settings
+   search field. Built from the SAME primitives as the rest of this file
+   (.ctx-item-block rows, .ctx-icon chips, .segmented) so nothing here reads
+   as a different design system — just new row types.
+   ============================================================================ */
+
+/* ---------- Toggle switch (same visual language as the shield popup's,
+   duplicated here rather than shared — this file is loaded by a totally
+   separate renderer/page than the toolbar's styles.css) ------------------- */
+.set-switch { position: relative; display: inline-flex; cursor: pointer; flex: none; }
+.set-switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.set-switch-track {
+  display: inline-flex;
+  align-items: center;
+  width: 36px;
+  height: 21px;
+  padding: 2px;
+  border-radius: var(--r-pill);
+  background: var(--glass-press);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+  transition: background-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+}
+.set-switch-thumb {
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: var(--text-faint);
+  transform: translateX(0);
+  transition: transform var(--dur-fast) var(--ease), background-color var(--dur-fast) var(--ease);
+}
+.set-switch input:checked + .set-switch-track {
+  background: color-mix(in srgb, var(--accent) 55%, var(--glass-press));
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.set-switch input:checked + .set-switch-track .set-switch-thumb {
+  background: #fff;
+  transform: translateX(15px);
+}
+.set-switch input:focus-visible + .set-switch-track { outline: 2px solid var(--accent-hi); outline-offset: 2px; }
+.set-switch input:disabled + .set-switch-track { opacity: 0.45; cursor: default; }
+
+/* A ctx-item-block whose control is a switch sits label-left/switch-right
+   on one line (unlike the segmented/color rows, a single on/off doesn't
+   need its own full-width row underneath). */
+.ctx-item-row {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ctx-item-row .ctx-item-top { flex: 1; min-width: 0; }
+
+/* ---------- Status banner (global protection / feature state) ------------ */
+.set-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  background: var(--bg-3);
+  box-shadow: inset 0 0 0 1px var(--border);
+  font-size: 12px;
+  color: var(--text-dim);
+  margin: 2px 0 12px;
+}
+.set-banner strong { color: var(--text); font-weight: 650; }
+.set-banner.set-banner-warn {
+  background: color-mix(in srgb, #e3a23c 14%, var(--bg-3));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #e3a23c 40%, var(--border));
+  color: #e3b36a;
+}
+.set-banner.set-banner-error {
+  background: color-mix(in srgb, #e5484d 14%, var(--bg-3));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #e5484d 40%, var(--border));
+  color: #f3a5a8;
+}
+
+/* ---------- Stat cards (Ad Blocker → Statistics) -------------------------- */
+.set-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 2px 0 14px;
+}
+.set-stat-card {
+  padding: 12px 10px;
+  border-radius: var(--r-md);
+  background: var(--bg-3);
+  box-shadow: inset 0 0 0 1px var(--border);
+  text-align: center;
+}
+.set-stat-card .set-stat-value { display: block; font-size: 20px; font-weight: 700; color: var(--accent-hi); }
+.set-stat-card .set-stat-label { display: block; margin-top: 2px; font-size: 10.5px; color: var(--text-faint); }
+
+/* ---------- List rows (filter lists, site exceptions) --------------------- */
+.set-list { display: flex; flex-direction: column; gap: 4px; }
+
+.set-list-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: var(--r-sm);
+  transition: background-color var(--dur-fast) var(--ease);
+}
+.set-list-row:hover { background: color-mix(in srgb, var(--accent) 7%, var(--bg-3)); }
+
+.set-list-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.set-list-title { font-size: 12.5px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.set-list-meta { font-size: 10.5px; color: var(--text-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.set-list-meta.set-list-meta-error { color: #e3898f; }
+
+.set-list-actions { flex: none; display: flex; align-items: center; gap: 8px; }
+
+/* Clear-on-exit checkbox rows (Part 3A, Privacy & History) — same .set-list
+   row shell as the ad-blocker filter-list rows above, with a real checkbox
+   as the leading control (instead of a switch + trailing action buttons)
+   and descriptions long enough that they need to wrap, not ellipsize. */
+.set-checkbox-row { cursor: pointer; }
+.set-checkbox-row .set-list-meta { white-space: normal; overflow: visible; }
+
+/* ---------- Shared checkbox (Part 2 modernization) --------------------------
+   Every real <input type="checkbox"> in Settings (clear-on-exit rows, filter-
+   list rows, and any future one) goes through this single rule set instead
+   of each row hand-rolling its own look — `accent-color` alone just tints
+   whichever native OS widget is running underneath it, which is exactly why
+   these looked inconsistent/dated next to Gloza's own flat, square-cornered
+   design language. `appearance: none` hands the whole box to us; the
+   checkmark is a plain inline SVG as the `:checked` background-image rather
+   than a border-trick, so it stays crisp at any zoom level. */
+.set-checkbox-row input[type="checkbox"],
+.exit-clear-check {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: none;
+  width: 17px;
+  height: 17px;
+  margin: 0;
+  border-radius: 5px;
+  border: 1.5px solid var(--border-strong);
+  background: var(--bg-3);
+  cursor: pointer;
+  display: inline-grid;
+  place-items: center;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text) 4%, transparent);
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease);
+}
+.set-checkbox-row input[type="checkbox"]:hover:not(:disabled),
+.exit-clear-check:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border-strong));
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg-3));
+}
+.set-checkbox-row input[type="checkbox"]:checked,
+.exit-clear-check:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M3.5 8.5l3 3 6-6.5' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 11px 11px;
+}
+.set-checkbox-row input[type="checkbox"]:checked:hover:not(:disabled),
+.exit-clear-check:checked:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--accent) 88%, white 0%);
+  border-color: color-mix(in srgb, var(--accent) 88%, white 0%);
+}
+.set-checkbox-row input[type="checkbox"]:focus-visible,
+.exit-clear-check:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.set-checkbox-row input[type="checkbox"]:disabled,
+.exit-clear-check:disabled {
+  cursor: default;
+  opacity: 0.45;
+  border-color: var(--border);
+}
+.set-checkbox-row input[type="checkbox"]:disabled:checked,
+.exit-clear-check:disabled:checked {
+  background-color: var(--text-faint);
+  border-color: var(--text-faint);
+}
+
+/* ---------- Diagnostics panel (Part 2 §2) ------------------------------- */
+.set-diag-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.set-diag-count {
+  font-size: 11px;
+  color: var(--text-faint);
+  flex: 1;
+}
+.set-diag-table {
+  display: flex;
+  flex-direction: column;
+  max-height: 260px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--bg-3);
+}
+.set-diag-row {
+  display: grid;
+  grid-template-columns: 96px 2.2fr 76px 1fr 1.4fr 72px;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 10px;
+  font-size: 10.5px;
+  border-bottom: 1px solid var(--border);
+}
+.set-diag-row:last-child { border-bottom: none; }
+.set-diag-verdict { font-weight: 700; }
+.set-diag-blocked { color: #e3898f; }
+.set-diag-allowed { color: color-mix(in srgb, var(--accent) 70%, var(--text) 10%); }
+.set-diag-url, .set-diag-rule {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-dim);
+}
+.set-diag-type, .set-diag-initiator, .set-diag-time {
+  color: var(--text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.set-icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text-faint);
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+.set-icon-btn:hover { background: var(--glass-hover); color: var(--text); }
+.set-icon-btn:disabled { opacity: 0.4; cursor: default; }
+.set-icon-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+.set-text-btn {
+  border: 0;
+  background: transparent;
+  color: var(--accent-hi);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 5px 9px;
+  border-radius: var(--r-sm);
+  transition: background-color var(--dur-fast) var(--ease);
+}
+.set-text-btn:hover { background: var(--accent-soft); }
+.set-text-btn:disabled { opacity: 0.4; cursor: default; background: none; }
+.set-text-btn.set-text-btn-danger { color: #e5898f; }
+.set-text-btn.set-text-btn-danger:hover { background: color-mix(in srgb, #e5484d 16%, transparent); }
+
+.set-empty-note {
+  padding: 12px 10px;
+  color: var(--text-faint);
+  font-size: 11.5px;
+  font-style: italic;
+}
+
+/* ---------- Exception host chip (typed-in add-exception row) -------------- */
+.set-add-row {
+  display: flex;
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+.set-add-row input[type="text"] {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: var(--r-sm);
+  border: 0;
+  background: var(--glass-press);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+}
+.set-add-row input[type="text"]:focus-visible { outline: 2px solid var(--accent-hi); outline-offset: 1px; }
+.set-add-row button {
+  flex: none;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  box-shadow: inset 0 0 0 1px var(--accent-mid);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.set-add-row button:hover { background: color-mix(in srgb, var(--accent) 24%, transparent); }
+.set-add-row button:disabled { opacity: 0.45; cursor: default; }
+
+/* ---------- Settings search (sidebar) -------------------------------------- */
+.settings-search-wrap {
+  position: relative;
+  margin: 0 8px 8px;
+}
+.settings-search-wrap svg {
+  position: absolute;
+  left: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: var(--text-faint);
+  stroke-width: 1.8;
+  pointer-events: none;
+}
+#settings-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 7px 9px 7px 28px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: var(--glass-press);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+}
+#settings-search-input:focus-visible { outline: 2px solid var(--accent-hi); outline-offset: 1px; }
+#settings-search-input::placeholder { color: var(--text-faint); }
+
+/* Search results drop-list: reuses the nav-item row look, rendered in place
+   of the plain category list while a query is active. */
+.settings-search-results { display: flex; flex-direction: column; gap: 2px; }
+.settings-search-result {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  background: transparent;
+  color: var(--text-dim);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--r-sm);
+}
+.settings-search-result:hover { background: color-mix(in srgb, var(--accent) 9%, var(--bg-3)); color: var(--text); }
+.settings-search-result .ssr-label { font-size: 12px; font-weight: 600; color: var(--text); }
+.settings-search-result .ssr-category { font-size: 10px; color: var(--text-faint); }
+.settings-search-empty { padding: 10px; color: var(--text-faint); font-size: 11.5px; }
+
+/* ---------- Narrower windows: let the two-column stat grid wrap ----------- */
+@media (max-width: 760px) {
+  .settings-shell { padding: 12px; gap: 12px; }
+  .settings-nav { width: 170px; }
+}
+@media (max-width: 620px) {
+  .settings-shell { flex-direction: column; height: auto; min-height: 100vh; }
+  .settings-nav { width: 100%; }
+  .set-stats-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+}
+
+/* ============================================================================
+   HOME SCREEN (Part 2) — bookmark manager list, background swatches, and
+   the Settings-side add/edit dialog. Reuses .set-list/.set-list-row/
+   .set-text-btn/.set-switch/.ctx-item-save/.set-banner from elsewhere on
+   this page rather than inventing parallel versions of those.
+   ============================================================================ */
+
+/* ---- Bookmark manager rows: name/url + edit/move/delete actions --------- */
+.hsb-row-url {
+  display: block;
+}
+.hsb-row-actions-btn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+.hsb-row-actions-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.hsb-row-actions-btn:hover { background: var(--glass-hover); color: var(--text); }
+.hsb-row-actions-btn:disabled { opacity: 0.35; cursor: default; }
+.hsb-row-actions-btn:disabled:hover { background: transparent; color: var(--text-dim); }
+.hsb-row-actions-btn.hsb-row-danger:hover { color: #e3898f; }
+
+/* ---- Background swatches -------------------------------------------------- */
+.hsb-bg-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.hsb-bg-swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  border-radius: var(--r-sm);
+}
+.hsb-bg-swatch-fill {
+  width: 40px;
+  height: 28px;
+  border-radius: var(--r-sm);
+  box-shadow: inset 0 0 0 1.5px var(--border);
+  transition: box-shadow var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+}
+.hsb-bg-swatch-default {
+  background:
+    radial-gradient(70% 70% at 50% -10%, color-mix(in srgb, var(--accent) 45%, transparent), transparent 70%),
+    var(--bg-0);
+}
+.hsb-bg-swatch-label { font-size: 10px; color: var(--text-faint); }
+.hsb-bg-swatch:hover .hsb-bg-swatch-fill { box-shadow: inset 0 0 0 1.5px var(--border-strong); }
+.hsb-bg-swatch.hsb-bg-active .hsb-bg-swatch-fill {
+  box-shadow: inset 0 0 0 2px var(--accent-hi), 0 0 0 2px var(--bg-2), 0 0 0 3.5px var(--accent-mid);
+}
+.hsb-bg-swatch.hsb-bg-active .hsb-bg-swatch-label { color: var(--text); font-weight: 600; }
+
+.hsb-bg-custom-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.hsb-bg-custom-status { font-size: 11px; color: var(--text-faint); }
+.hsb-bg-preview-wrap {
+  margin-top: 10px;
+  width: 160px;
+  height: 90px;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+.hsb-bg-preview { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* ---- Add/Edit dialog ------------------------------------------------------- */
+.hsb-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, black 55%, transparent);
+  animation: hsb-fade var(--dur) var(--ease);
+}
+.hsb-dialog-overlay[hidden] { display: none; }
+.hsb-dialog {
+  width: min(380px, calc(100% - 32px));
+  background: var(--bg-2);
+  border-radius: var(--r-lg);
+  box-shadow: 0 24px 60px -20px color-mix(in srgb, black 60%, transparent), inset 0 0 0 1px var(--border);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  animation: hsb-pop var(--dur) var(--ease);
+}
+.hsb-dialog-head { font-size: 14px; font-weight: 600; color: var(--text); }
+.hsb-dialog-body { display: flex; flex-direction: column; gap: 12px; }
+.hsb-field { display: flex; flex-direction: column; gap: 5px; }
+.hsb-field-label { font-size: 11px; color: var(--text-faint); font-weight: 600; }
+.hsb-field input {
+  padding: 9px 10px;
+  border-radius: var(--r-sm);
+  background: var(--bg-1);
+  box-shadow: inset 0 0 0 1px var(--border);
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+}
+.hsb-field input:focus-visible { outline: 2px solid var(--accent-hi); outline-offset: 1px; }
+.hsb-field input.hsb-field-invalid { box-shadow: inset 0 0 0 1.5px #e3898f; }
+.hsb-dialog-error { margin: 0; font-size: 11.5px; color: #e3898f; }
+.hsb-dialog-actions { display: flex; align-items: center; }
+.hsb-dialog-actions-spacer { flex: 1; }
+
+@keyframes hsb-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes hsb-pop { from { opacity: 0; transform: scale(0.96) translateY(4px); } to { opacity: 1; transform: none; } }
+
+/* ---- Bookmark manager: drag-and-drop reordering --------------------------
+   Up/down buttons (above) stay as the keyboard/screen-reader-safe way to
+   reorder; this adds native HTML5 drag-and-drop as a faster alternative on
+   top of them — both call the same home-bookmarks:reorder handler, so
+   there's exactly one reordering code path either way. */
+.hsb-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  cursor: default;
+  position: relative;
+  transition: transform var(--dur-fast) var(--ease), opacity var(--dur-fast) var(--ease);
+}
+.hsb-row-grip {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 26px;
+  padding: 0;
+  margin-right: 2px;
+  border: 0;
+  background: transparent;
+  color: var(--text-faint);
+  cursor: grab;
+  border-radius: var(--r-sm);
+}
+.hsb-row-grip:hover { color: var(--text-dim); background: var(--glass-hover); }
+.hsb-row-grip svg { width: 14px; height: 14px; }
+.hsb-row.hsb-dragging { opacity: 0.45; }
+.hsb-row.hsb-dragging .hsb-row-grip { cursor: grabbing; }
+
+/* A thin accent-colored rule above/below the row currently being hovered
+   during a drag, showing exactly where the dragged bookmark will land. */
+.hsb-row.hsb-drop-before::before,
+.hsb-row.hsb-drop-after::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--accent-hi);
+  pointer-events: none;
+}
+.hsb-row.hsb-drop-before::before { top: -2px; }
+.hsb-row.hsb-drop-after::after { bottom: -2px; }
+
+/* ---------- 7. About ------------------------------------------------------- */
+.nav-icon-mark {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+}
+.nav-icon-mark svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+.about-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 16px;
+  padding-bottom: 14px;
+}
+.about-hero-top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.about-mark {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--r-md, 11px);
+  box-shadow: 0 6px 18px -8px var(--accent-glow), inset 0 0 0 1px var(--border-strong);
+}
+.about-mark svg {
+  width: 44px;
+  height: 44px;
+  display: block;
+}
+.about-hero-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+.about-product-name {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.1px;
+}
+.about-version {
+  font-size: 12.5px;
+  color: var(--text-dim, rgba(238, 240, 239, 0.6));
+}
+.about-link {
+  color: var(--accent-hi);
+  text-decoration: none;
+  cursor: pointer;
+  border-radius: var(--r-sm, 6px);
+}
+.about-link:hover { text-decoration: underline; }
+.about-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.about-link-inline {
+  flex: none;
+  align-self: flex-start;
+  font-size: 12.5px;
+  font-weight: 650;
+  white-space: nowrap;
+  padding: 6px 10px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.about-link-inline:hover { background: color-mix(in srgb, var(--accent) 20%, transparent); }
+.about-link-inline[aria-disabled="true"] {
+  pointer-events: none;
+  opacity: 0.45;
+  text-decoration: none;
+  background: transparent;
+}
+.about-hero-sep { margin: 2px 0; }
+.about-hero-release {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.about-hero-release-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.about-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 18px 0 6px;
+  margin-top: 4px;
+}
+.about-footer-link {
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.75;
+}
+.about-footer-link:hover { opacity: 1; }
+.about-copyright {
+  font-size: 11px;
+  color: var(--text-faint, rgba(238, 240, 239, 0.4));
+}

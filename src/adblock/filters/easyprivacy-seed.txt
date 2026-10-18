@@ -1,0 +1,47 @@
+! Gloza bundled seed list — tracking/analytics
+! -----------------------------------------------------------------------
+! Same status as easylist-seed.txt: a small hand-curated starter subset
+! (not a redistribution of the full EasyPrivacy list,
+! https://easylist.to/easylist/easyprivacy.txt) used only until the real
+! list is fetched from the network. See easylist-seed.txt's header for the
+! full explanation and licensing note.
+[Adblock Plus 2.0]
+||scorecardresearch.com^
+||quantserve.com^
+||mixpanel.com^$third-party
+||segment.com^$third-party
+||segment.io^$third-party
+||amplitude.com^$third-party
+||hotjar.com^
+||fullstory.com^
+||mouseflow.com^
+||crazyegg.com^
+||clicktale.net^
+||newrelic.com^$third-party
+||nr-data.net^
+||chartbeat.com^
+||chartbeat.net^
+||optimizely.com^$third-party
+||clarity.ms^
+||bat.bing.com^
+||px.ads.linkedin.com^
+||snap.licdn.com^
+||analytics.twitter.com^
+||t.co^$third-party,script
+||branch.io^
+||adjust.com^
+||appsflyer.com^
+||kochava.com^
+||tapad.com^
+||krxd.net^
+||agkn.com^
+||exelator.com^
+||eyeota.net^
+||lotame.com^
+||onaudience.com^
+||crwdcntrl.net^
+||nielsen.com^$third-party
+||comscore.com^$third-party
+||cnzz.com^
+||histats.com^
+||statcounter.com^$third-party

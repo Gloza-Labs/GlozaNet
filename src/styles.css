@@ -1,0 +1,2419 @@
+/* ============================================================================
+   GLOZA TOOLBAR — styles.css
+   ----------------------------------------------------------------------------
+   Styles for index.html (the tab row + toolbar). Colors, radii, spacing and
+   motion all come from theme.css — change those there, not here.
+
+   renderer.js reaches for these by name, so keep them somewhere:
+     #tab-strip  .tab  .tab-label  .tab-close
+     #toolbar  #back-btn  #forward-btn  #reload-btn  #address-bar  #new-tab-btn
+
+   Sections
+     1. Chrome sizes
+     2. Page frame + aurora
+     3. Icons + round icon buttons
+     4. Tab row + tabs
+     5. New-tab button
+     6. Toolbar + address bar
+   ============================================================================ */
+
+
+/* ---------- 1. Chrome sizes ----------------------------------------------
+   The engine measures #chrome automatically, so these can change freely. */
+:root {
+  --tab-row-h: 50px;
+  --toolbar-h: 44px;
+
+  --tab-h: 34px;
+  --tab-max-w: 220px;
+  --tab-min-w: 44px;          /* crowded inactive tabs shrink to just a favicon */
+  --tab-active-min-w: 68px;   /* the active tab always keeps its icon + close button */
+  --tab-gap: 6px;
+
+  --ctl: 34px;           /* diameter of round toolbar buttons */
+  --address-h: 32px;     /* shortened slightly so new controls (star/downloads) fit comfortably */
+  --address-min-w: 160px; /* floor so it never gets crushed unreadable at the window's own min-width */
+}
+
+
+/* ---------- 2. Page frame + aurora -------------------------------------- */
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  position: relative;
+  /* Transparent, not var(--bg-1): while the context menu is open, main.js
+     temporarily grows this view to cover the whole window (see
+     expandToolbarForMenu in main.js) so the menu can render outside the
+     thin toolbar strip. If body painted an opaque color here, that would
+     blank out the entire page behind the menu. #chrome below supplies the
+     actual opaque toolbar background instead, so the normal (collapsed)
+     toolbar strip looks exactly as before. */
+  background: transparent;
+  user-select: none;
+  cursor: default;
+}
+
+/* Soft atmospheric glow from the top edge. Pure CSS gradients on two slowly
+   drifting layers — no JS. pointer-events:none so it never blocks a click. */
+/* The wash now reaches all the way to transparent 100% (used to stop at
+   85%, which faded to nothing before it ever reached the bookmarks row —
+   see the #bookmarks-bar comment below for why that was the actual cause
+   of it reading as a separate black bar) so the tint runs the full height
+   of #chrome, tab row through bookmarks bar, no matter which rows are
+   currently showing (this element always matches #chrome's real height). */
+#aurora {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  contain: strict;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 9%, transparent), transparent 100%);
+}
+
+#aurora::before,
+#aurora::after {
+  content: "";
+  position: absolute;
+  left: -15%;
+  right: -15%;
+  height: 240%;
+  will-change: transform;
+}
+
+/* Blob centers ("at X% Y%") used to both sit at Y=50% of a box anchored at
+   top:-140%/-160% — which places their actual center at roughly the very
+   TOP of #chrome (the tab row), not the middle of the whole chrome. That's
+   why the glow was visibly concentrated around the tabs and had almost
+   faded out by the time it reached the bookmarks row three rows down.
+   Retuned so the two layers' centers land at ~42% and ~70% of #chrome's
+   total height instead — staggered so, together, they wash evenly across
+   the tab row, toolbar AND bookmarks row as one continuous surface,
+   whether or not the bookmarks row is currently visible. */
+#aurora::before {
+  top: -78%;
+  background:
+    radial-gradient(40% 34% at 18% 50%, var(--aurora-a), transparent 72%),
+    radial-gradient(32% 30% at 54% 46%, var(--aurora-b), transparent 72%),
+    radial-gradient(38% 34% at 86% 52%, var(--aurora-a), transparent 72%);
+  animation: aurora-drift 22s ease-in-out infinite alternate;
+}
+
+#aurora::after {
+  top: -48%;
+  opacity: 0.7;
+  background:
+    radial-gradient(46% 32% at 38% 50%, var(--aurora-b), transparent 70%),
+    radial-gradient(30% 28% at 72% 48%, var(--aurora-a), transparent 70%);
+  animation: aurora-drift 30s ease-in-out infinite alternate-reverse;
+}
+
+/* #chrome holds the real UI above the aurora. Do NOT give it a fixed height:
+   its natural height is what gets reported to the engine. */
+#chrome {
+  position: relative;
+  z-index: 1;
+  /* Moved here from body (see the comment on the body rule above) so only
+     the actual toolbar strip is opaque, not the whole (potentially
+     window-sized) view. */
+  background: var(--bg-1);
+}
+
+/* Thin accent highlight along the very top edge */
+#chrome::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 12%;
+  right: 12%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent-mid), transparent);
+  pointer-events: none;
+}
+
+/* Single hairline along the very BOTTOM edge of #chrome, wherever that
+   actually falls — tab row + toolbar + bookmarks bar are one unified
+   Gloza surface (shared background, shared aurora, see #bookmarks-bar
+   below), so they get exactly one dividing line where the chrome meets
+   the page, not a separate border under each row. #chrome has no fixed
+   height (its natural height is what main.js measures), so this tracks
+   the real bottom automatically whether or not the bookmarks bar is
+   currently shown. */
+#chrome::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--border);
+  pointer-events: none;
+}
+
+
+/* ---------- 3. Icons + round icon buttons --------------------------------- */
+.icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Base for every round button (back, forward, reload, settings, new tab).
+   The circle you see on hover is the ::before layer: it scales and fades in
+   rather than just switching on, which is what makes it feel smooth. */
+.icon-btn {
+  position: relative;
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: var(--ctl);
+  height: var(--ctl);
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-dim);
+  font: inherit;
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+}
+
+.icon-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--glass-hover);
+  opacity: 0;
+  transform: scale(0.6);
+  transition:
+    opacity var(--dur-fast) var(--ease),
+    transform var(--dur) var(--ease),
+    background-color var(--dur-fast) var(--ease);
+}
+
+.icon-btn .icon {
+  position: relative;               /* paints above the ::before circle */
+  transition: transform var(--dur) var(--ease), color var(--dur-fast) var(--ease);
+}
+
+.icon-btn:hover:not(:disabled) { color: var(--text); }
+.icon-btn:hover:not(:disabled)::before { opacity: 1; transform: scale(1); }
+
+.icon-btn:active:not(:disabled) { transform: scale(0.92); }
+.icon-btn:active:not(:disabled)::before { background: var(--glass-press); }
+
+/* Disabled = dimmed and inert, but still clearly a button that exists */
+.icon-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.icon-btn:focus-visible {
+  outline: 2px solid var(--accent-hi);
+  outline-offset: 2px;
+}
+
+/* Reload icon spins while the page is loading (renderer.js toggles .is-loading) */
+#reload-btn.is-loading .icon { animation: spin 0.9s linear infinite; }
+
+
+/* ---------- 4. Tab row + tabs ------------------------------------------- */
+#tab-row {
+  display: flex;
+  align-items: center;
+  height: var(--tab-row-h);
+  padding: 0 var(--sp-3);
+  /* No native title bar (frame: false in main.js), so this row doubles as
+     the drag handle for moving the window. This is deliberately NOT
+     `-webkit-app-region: drag`: that OS-level drag region swallows mouse
+     events before they ever reach the DOM (a well-known Electron
+     limitation), which is exactly why a click on the empty strip to the
+     right of the New Tab button could never reliably dismiss the URL
+     dropdown. Dragging is instead implemented by hand in renderer.js
+     (pointerdown/pointermove on the bare row + window.browser.moveWindowBy,
+     see main.js's 'window:moveBy'), which lets a plain click behave like a
+     normal, fully-delivered DOM click while dragging still works. */
+  -webkit-app-region: no-drag;
+}
+
+/* Tab-strip overflow arrows (JS toggles [hidden] — see layoutTabStripArrows
+   in renderer.js). Same icon-button language as the rest of the chrome;
+   slightly narrower since they only ever hold a small chevron. */
+.tab-strip-arrow { flex: none; }
+.tab-strip-arrow[hidden] { display: none; }
+
+/* flex-basis = room for all tabs, so the + button sits right after the last tab. When the row fills up, the strip shrinks and tabs narrow; if
+   they can't narrow any further the strip scrolls (scrollbar hidden, mouse
+   wheel works, and renderer.js keeps the active tab in view).
+   The strip is as tall as the whole row so tab glows and focus rings aren't
+   clipped by the scroll area. */
+#tab-strip {
+  display: flex;
+  align-items: center;
+  /* Wide enough for every tab at full size (renderer.js sets --tab-count).
+     Sized from the count, not from the tabs' contents, so compact/narrow
+     tabs can never make the strip itself collapse. */
+  flex: 0 1 calc(var(--tab-count, 1) * (var(--tab-max-w) + var(--tab-gap)) + 4px);
+  min-width: 0;
+  height: var(--tab-row-h);
+  margin-inline-start: -4px;   /* room for the first tab's focus ring... */
+  padding-inline-start: 4px;   /* ...without moving the tab itself */
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-padding-inline: var(--sp-2);
+  scrollbar-width: none;
+  /* --tab-count drops the instant a tab starts closing (see renderer.js），
+     so the strip's own reserved width eases down in step with the closing
+     tab's own shrink animation below, instead of snapping at the end.
+     That's what keeps the #new-tab-btn sliding continuously instead of
+     jumping once the tab is finally removed from the DOM. */
+  transition: flex-basis var(--dur) var(--ease);
+}
+
+/* While a tab is being dragged, let it fully ignore the horizontal scroll
+   so it can be positioned anywhere in the strip under the pointer. */
+#tab-strip.has-drag { overflow-x: hidden; }
+/* During a drag the only transform transition allowed is a neighbor's own
+   FLIP settle (.drag-settling). The base .tab transition includes transform,
+   which made each neighbor's "jump back to where it was" write animate
+   from 0 instead of snapping, so tabs visibly slid the wrong way first. */
+#tab-strip.has-drag .tab:not(.drag-settling) { transition-property: background-color, box-shadow, color; }
+
+#tab-strip::-webkit-scrollbar { display: none; }
+
+.tab {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex: 0 1 var(--tab-max-w);
+  min-width: var(--tab-min-w);
+  height: var(--tab-h);
+  margin-inline-end: var(--tab-gap);
+  padding: 0 6px 0 8px;
+  overflow: hidden;
+  border-radius: var(--tab-radius);
+  background: var(--glass);
+  box-shadow: inset 0 0 0 1px var(--border), 0 6px 14px -8px transparent;
+  color: var(--text-dim);
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  animation: tab-in var(--dur) var(--ease) backwards;
+  transition:
+    background-color var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease),
+    color var(--dur) var(--ease),
+    transform var(--dur-fast) var(--ease);
+}
+
+/* Faint top-lit sheen, only visible on the active tab */
+.tab::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--text) 10%, transparent), color-mix(in srgb, var(--text) 2%, transparent));
+  opacity: 0;
+  transition: opacity var(--dur) var(--ease);
+}
+
+/* Thin accent line along the bottom of the active tab.
+   Fading a vivid color straight to the keyword `transparent` makes browsers
+   interpolate through muddy, banded mid-tones (the classic CSS "transparent
+   black" gradient bug) — that's the pixelated/blocky look this was showing.
+   Interpolating in OKLab keeps the hue constant all the way to zero alpha,
+   so the fade-out is smooth at any zoom or DPI; the plain fallback above it
+   keeps older engines working. Thickness/size are unchanged from before. */
+.tab::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 1px;
+  width: 42%;
+  max-width: 60px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent-hi), transparent);
+  background: linear-gradient(90deg in oklab, transparent, var(--accent-hi), transparent);
+  opacity: 0;
+  transform: translateX(-50%) scaleX(0.3) translateZ(0);
+  transform-origin: center;
+  backface-visibility: hidden;
+  will-change: transform, opacity;
+  transition: opacity var(--dur) var(--ease), transform var(--dur-slow) var(--ease);
+  pointer-events: none;
+}
+
+.tab:hover {
+  background: var(--glass-hover);
+  color: var(--text);
+}
+
+.tab:active { transform: scale(0.985); }
+
+/* Multi-select (Select All Tabs from the context menu) */
+.tab.selected { box-shadow: inset 0 0 0 1.5px var(--accent-hi); }
+
+/* Pinned: a small filled dot in the corner, same visual language as the
+   active-tab underline accent, so it doesn't compete with the favicon. */
+.tab.pinned .tab-icon::after {
+  content: '';
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent-hi);
+  right: -2px;
+  bottom: -2px;
+  box-shadow: 0 0 0 1.5px var(--bg-2);
+}
+.tab.pinned .tab-icon { position: relative; }
+
+/* Audio/mute indicator, before the close button. createIcon() returns a
+   single <svg class="icon tab-status-icon tab-audio-icon">, not an icon
+   nested in its own wrapper button the way .tab-close is — so the sizing
+   AND the clickable hit-circle both have to live on this one element.
+   Sized and weighted to actually read at a glance: it used to be a 12px
+   glyph with no resting hit-box of its own, easy to miss sitting right
+   next to the close button. Bumped up with a heavier stroke and given a
+   real padded circular hit target in the same hover/press language as
+   .tab-close right next to it, so the two read as one consistent pair of
+   small round controls rather than one obvious button next to a speck. */
+.tab-status-icon {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  stroke-width: 2;
+  color: var(--text-dim);
+  margin-right: 1px;
+}
+.tab.active .tab-status-icon { color: var(--text); }
+
+/* Clickable (mute/unmute): 20px glyph + 4px padding = 28px hit area. The
+   negative margins cancel the padding so the tab's height and the title's
+   room are only affected by the glyph itself. */
+.tab-audio-icon {
+  cursor: pointer;
+  padding: 4px;
+  margin: -4px -2px -4px -4px;
+  border-radius: 50%;
+  outline: none;               /* no focus ring: it never takes focus (see pointerdown in renderer.js) */
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
+}
+.tab-audio-icon[hidden] { display: none; }  /* takes no space on normal tabs */
+.tab-audio-icon:focus,
+.tab-audio-icon:focus-visible { outline: none; }
+.tab-audio-icon:hover {
+  color: var(--accent-hi);
+  background: var(--glass-press);
+}
+.tab-audio-icon:active { background: var(--border-strong); transform: scale(0.9); }
+/* Muted = persistent state, clearly different from the playing speaker. */
+.tab-audio-icon[aria-pressed="true"] {
+  color: var(--accent-hi);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+.tab-audio-icon[aria-pressed="true"]:hover {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.tab.active {
+  min-width: var(--tab-active-min-w);
+  background: var(--glass-hover);
+  box-shadow: inset 0 0 0 1px var(--accent-mid), 0 6px 14px -8px var(--accent-glow);
+  color: var(--text);
+}
+
+.tab.active::before { opacity: 1; }
+.tab.active::after  { opacity: 1; transform: translateX(-50%) scaleX(1) translateZ(0); }
+
+.tab:focus-visible {
+  outline: 2px solid var(--accent-hi);
+  outline-offset: 2px;
+}
+
+/* Appear / disappear. renderer.js adds .closing, waits for this animation to
+   finish, then removes the element. */
+.tab.tab-settled:not(.closing) { animation: none; }
+
+.tab.closing {
+  pointer-events: none;
+  animation: tab-out var(--dur) var(--ease) forwards;
+}
+
+/* Dragging to reorder (renderer.js sets this + an inline translateX). The
+   dragged tab tracks the pointer 1:1, so its own transform must not be
+   eased — only its lift (shadow/scale) is. Neighbors it passes over keep
+   their normal transition and get a FLIP transform applied/cleared by JS,
+   which is what makes them slide out of the way smoothly. */
+.tab.dragging {
+  z-index: 5;
+  cursor: grabbing;
+  box-shadow: inset 0 0 0 1px var(--accent-mid), 0 10px 22px -8px rgba(0, 0, 0, 0.5);
+  transition: box-shadow var(--dur) var(--ease), background-color var(--dur) var(--ease), color var(--dur) var(--ease);
+  /* The dragged tab's transform is rewritten on every single pointermove
+     (renderer.js) — promoting it to its own compositor layer up front means
+     each of those updates is a cheap compositor-only transform, instead of
+     the browser re-evaluating whether to promote it mid-drag. */
+  will-change: transform;
+}
+
+/* Every neighbor the drag passes gets this class for the ~200ms it takes to
+   FLIP into its new slot (renderer.js: settleNeighbors) — same reasoning as
+   .tab.dragging above, just scoped to only while actually animating so
+   idle tabs don't carry the (minor) memory cost of an own layer forever. */
+.tab.drag-settling {
+  transition: transform var(--dur) var(--ease);
+  will-change: transform;
+}
+
+/* Once the pointer has carried the dragged tab outside this window's own
+   bounds (renderer.js: isOutsideOwnWindow), it's about to be detached into
+   a new window or dropped onto another one — fade + shrink it slightly so
+   the "this tab is leaving" intent reads clearly, same idea as a real
+   browser's tear-off ghost. */
+.tab.tearing-away {
+  opacity: 0.45;
+  transform-origin: center;
+  scale: 0.94;
+}
+
+@keyframes tab-in {
+  from { flex-basis: 0; min-width: 0; margin-inline-end: 0; opacity: 0; transform: scale(0.88); }
+}
+
+@keyframes tab-out {
+  to { flex-basis: 0; min-width: 0; margin-inline-end: 0; padding-inline: 0; opacity: 0; transform: scale(0.88); }
+}
+
+/* --- favicon slot: [fallback globe | real favicon | loading spinner] ---
+   Only one is visible at a time; classes on .tab decide which. */
+.tab-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  margin-inline-start: 6px;   /* + the tab's 6px padding = 12px from the left edge */
+}
+
+.tab-icon > * { grid-area: 1 / 1; }
+
+.tab-fallback {
+  width: 16px;
+  height: 16px;
+  stroke-width: 1.7;
+  color: var(--text-faint);
+  transition: color var(--dur) var(--ease);
+}
+
+.tab.active .tab-fallback { color: var(--accent-hi); }
+
+.tab-favicon {
+  display: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  object-fit: contain;
+}
+
+.tab-spinner {
+  display: none;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border-strong);
+  border-top-color: var(--accent-hi);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+.tab.has-favicon .tab-favicon  { display: block; }
+.tab.has-favicon .tab-fallback { display: none; }
+
+/* Loading wins over everything above (it comes later in the file) */
+.tab.loading .tab-spinner  { display: block; }
+.tab.loading .tab-favicon,
+.tab.loading .tab-fallback { display: none; }
+
+.tab-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Close button: a 20px circle target that hugs the tab's trailing edge
+   (a small negative end-margin offsets the tab's own padding, so the
+   button's hit-area — not just its icon — sits where a thumb actually
+   expects it, the way Chrome/Edge/Firefox all place it). A grey circle
+   fades in behind the × on hover; it never scales the tab itself. */
+.tab-close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  margin-inline-end: -2px;
+  border-radius: 50%;
+  color: var(--text-faint);
+  cursor: pointer;
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
+}
+
+.tab-close .icon {
+  width: 11px;
+  height: 11px;
+  stroke-width: 2.2;
+}
+
+.tab:hover .tab-close,
+.tab.active .tab-close { color: var(--text-dim); }
+
+.tab-close:hover {
+  background: var(--glass-press);
+  color: var(--text);
+}
+
+.tab-close:active { background: var(--border-strong); transform: scale(0.84); }
+
+.tab-close:focus-visible {
+  outline: 2px solid var(--accent-hi);
+  outline-offset: 1px;
+}
+
+/* Crowded tabs (many tabs open): renderer.js adds .compact when a tab gets
+   narrower than 84px. We drop the title, and on inactive tabs the close
+   button too, leaving a centered favicon. Works at any window size. */
+.tab.compact .tab-label { display: none; }
+.tab.compact:not(.active) .tab-close { display: none; }
+.tab.compact:not(.active) .tab-icon { margin-inline: auto; }
+
+
+/* ---------- 5. New-tab button ------------------------------------------- */
+/* Same height as a tab so it reads as one more floating surface in the row */
+#new-tab-btn {
+  width: var(--tab-h);
+  height: var(--tab-h);
+  background: var(--glass);
+  box-shadow: inset 0 0 0 1px var(--border);
+  transition:
+    color var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease),
+    box-shadow var(--dur) var(--ease);
+}
+
+#new-tab-btn::before {
+  background: var(--accent-soft);
+}
+
+#new-tab-btn:hover:not(:disabled) {
+  color: var(--accent-hi);
+  box-shadow: inset 0 0 0 1px var(--accent-mid);
+}
+
+#new-tab-btn:hover .icon { transform: rotate(90deg); }
+
+
+/* ---------- 5b. Native window-control reserved space -----------------------
+   Close/Minimize/Maximize/Restore (and, on macOS, the traffic lights) used
+   to be a custom #window-controls button row drawn here with hand-built SVG
+   icons. That row is gone. In 'custom' Title Bar Mode (frame: false) the OS
+   itself now draws the real native controls directly on top of this window
+   — see nativeControlOptions() in main.js — and all #tab-row has to do is
+   leave the correct blank space for them so nothing else sits underneath.
+
+   Windows / Linux (Window Controls Overlay): the overlay sits at the
+   window's top-right. Electron/Chromium expose its actual geometry to this
+   page as the standard `env(titlebar-area-*)` CSS environment variables
+   (part of the WICG Window Controls Overlay spec) the moment
+   `titleBarOverlay` is set — NOT a fixed/guessed width, so this tracks the
+   OS's real button geometry (which varies slightly with the OS's text/
+   accessibility scale) automatically, including on resize. We don't
+   fully trust env() to always be populated (e.g. a Linux desktop/Electron
+   combination that accepted titleBarOverlay but doesn't actually support
+   WCO — see the chat reply), so the fallback value is a conservative
+   Windows-sized estimate (3 buttons × 46px) rather than 0, which would let
+   content silently sit under real native buttons on platforms where env()
+   isn't populated for some reason.
+   `window-controls-overlay` is the keyword this CSS ONLY applies under on
+   win/linux — see [data-platform] below; it is meaningless on macOS, which
+   doesn't support titleBarOverlay at all. */
+[data-platform="win"] #tab-row,
+[data-platform="linux"] #tab-row {
+  padding-inline-end: max(var(--sp-3), calc(100% - env(titlebar-area-x, 0px) - env(titlebar-area-width, calc(100% - 138px))));
+}
+
+/* macOS: the traffic lights sit at the window's top-LEFT. Unlike Windows/
+   Linux's Window Controls Overlay, Electron/macOS does NOT expose the
+   lights' actual rendered bounds back to the renderer via env() or any web
+   API, so this reserved width can't be read live the way the WCO case
+   above does — it has to be a computed number.
+
+   That number is now computed ONCE, in main.js (MAC_TRAFFIC_LIGHT_RESERVE_PX,
+   built from the very same MAC_TRAFFIC_LIGHT_INSET_X used for the actual
+   `trafficLightPosition`/`setWindowButtonPosition` calls), and pushed to
+   this page at runtime as an INLINE --mac-traffic-light-reserve custom
+   property on <html> (see preload.js, which sets it pre-paint, and
+   renderer.js's applyPrefs, which keeps it current on every later
+   prefs-updated push) — not hand-copied here as a second, independently
+   drifting guess the way it used to be. renderer.js additionally applies
+   this reserve directly to #tab-row's own inline style as a second,
+   independent guarantee (see the top of renderer.js) — the rule below is
+   now the fallback for BOTH of those, not the primary mechanism:
+
+     MAC_TRAFFIC_LIGHT_INSET_X   12px   — x inset passed to trafficLightPosition
+   + traffic-light cluster width 52px   — 3 standard 12px circles, ~8px gaps
+   + safety buffer               36px   — covers the unverified parts: this
+                                           project has no macOS available to
+                                           actually measure the rendered
+                                           cluster against (see the chat
+                                           reply), small cross-version/
+                                           display-scale differences in
+                                           exactly how macOS sizes the
+                                           cluster, and the native hit-target
+                                           commonly being a little larger
+                                           than the visible circles.
+   ----------------------------------
+   = 100px, applied to EVERY child of #tab-row (the tab-list/overflow-arrow
+   button, the tab strip and its first tab, the new-tab button — anything
+   that would otherwise start at the row's normal start-edge padding) by
+   pushing the row's own start edge out, not by special-casing any one
+   element. If a real Mac later shows the lights sitting with room to
+   spare, shrink MAC_TRAFFIC_LIGHT_SAFETY_BUFFER in main.js (not this
+   number — this is just the fallback); if anything is still clipped, grow
+   it there. The `100px` below is only what applies if the inline property
+   somehow never arrives. */
+:root { --mac-traffic-light-reserve: 134px; }
+[data-platform="mac"] #tab-row {
+  padding-inline-start: var(--mac-traffic-light-reserve);
+}
+/* macOS hides the traffic lights automatically once the window enters real
+   (OS-level) fullscreen — there's no title-bar region left for them to sit
+   in — so the reserved space becomes pure wasted width at exactly the
+   moment every pixel matters most for tabs. isFullscreenNow in renderer.js
+   already toggles .is-fullscreen on <html> for this exact kind of
+   fullscreen-only layout change; reclaim the space while it's set. */
+html[data-platform="mac"].is-fullscreen #tab-row {
+  padding-inline-start: var(--sp-3);
+}
+
+/* 'native' Title Bar Mode (Settings → Title bar): the OS is already drawing
+   a full conventional title bar above this view (frame: true), so none of
+   the above reserved space is needed — the tab row owns its whole width. */
+[data-titlebar="native"] #tab-row {
+  padding-inline-end: var(--sp-3);
+  padding-inline-start: var(--sp-3);
+}
+
+
+/* ---------- 6. Toolbar + address bar -------------------------------------- */
+#toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: var(--toolbar-h);
+  padding: 0 var(--sp-3) 0 10px;
+  /* No border-bottom here — when the bookmarks bar is showing, that would
+     read as two stacked, separately-bordered strips instead of one
+     continuous chrome surface. The single real divider (chrome-to-page)
+     is #chrome::after, which tracks whichever row actually ends up last. */
+}
+
+.address-wrap {
+  display: flex;
+  align-items: center;
+  /* flex-grow: 1 + flex-basis: 0 means the bar's width is purely "whatever
+     space is left" after the fixed-size toolbar buttons and gaps take
+     theirs — it has no intrinsic/preferred width of its own to fall back
+     to, so it always claims every remaining pixel instead of just the
+     slack left over from a content-based basis. min-width keeps it from
+     being crushed below usability on a narrow window; there's no
+     max-width, so on a wide window it keeps growing to fill the toolbar. */
+  flex: 1 1 0;
+  min-width: var(--address-min-w);
+  gap: 8px;
+  height: var(--address-h);
+  margin: 0 var(--sp-2);
+  padding: 0 var(--sp-3) 0 var(--sp-4);
+  border-radius: var(--r-pill);
+  background: var(--glass);
+  box-shadow: inset 0 0 0 1px var(--border), 0 0 0 0 transparent;
+  backdrop-filter: blur(14px) saturate(1.2);
+  cursor: text;
+  transition:
+    background-color var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease);
+}
+
+.address-wrap:hover { background: var(--glass-hover); }
+
+/* Focus: accent hairline + a faint halo. Subtle, not a bright ring. */
+.address-wrap:focus-within {
+  background: var(--glass-press);
+  box-shadow: inset 0 0 0 1px var(--accent-mid), 0 0 0 3px var(--accent-soft);
+}
+
+.address-icon {
+  width: 16px;
+  height: 16px;
+  stroke-width: 1.8;
+  color: var(--text-faint);
+  transition: color var(--dur) var(--ease);
+}
+
+.address-wrap:focus-within .address-icon { color: var(--accent-hi); }
+
+#address-bar {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13.5px;
+  user-select: text;
+}
+
+#address-bar::placeholder { color: var(--text-faint); }
+#address-bar::selection { background: var(--accent-mid); }
+
+/* Zoom reset pill — lives at the very left end of the address bar, inside
+   it. Hidden entirely at 100% (renderer.js) so it never competes visually
+   with the URL; a small, quiet pill otherwise. */
+#zoom-pill {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 8px;
+  margin-inline-start: -2px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--glass-hover);
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+#zoom-pill:hover { background: var(--accent-soft); color: var(--accent-hi); }
+#zoom-pill:active { transform: scale(0.95); }
+
+
+/* ---------- 6b. Tab-list button + star/downloads buttons + badge -------- */
+/* Sits at the absolute left edge of the tab strip; roughly tab-height, and
+   visually integrated (no circular hover halo, unlike the round icon
+   buttons — it reads as part of the strip itself). */
+#tab-list-btn {
+  /* Balanced width/height (rather than the old 30 x var(--tab-h) rectangle)
+     so the ::before hover layer below reads as a polished rounded square,
+     not an elongated pill. Centered in the tab row via align-self. */
+  width: 32px;
+  height: 32px;
+  align-self: center;
+  margin-inline-end: var(--sp-2);
+  border-radius: var(--r-sm);
+  color: var(--text-dim);
+}
+#tab-list-btn::before { border-radius: var(--r-sm); background: var(--glass-hover); }
+#tab-list-btn:hover:not(:disabled) { color: var(--accent-hi); }
+#tab-list-btn[aria-expanded="true"] { color: var(--accent-hi); }
+#tab-list-btn[aria-expanded="true"]::before { opacity: 1; transform: scale(1); background: var(--accent-soft); }
+
+#bookmark-btn.active { color: var(--accent-hi); }
+#bookmark-btn.active .icon { stroke: var(--accent-hi); }
+
+#downloads-btn { position: relative; }
+.badge {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-pill);
+  background: var(--accent);
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 0 0 2px var(--bg-1);
+}
+
+#settings-btn[aria-expanded="true"],
+#downloads-btn[aria-expanded="true"],
+#bookmark-btn[aria-pressed="true"] {
+  color: var(--accent-hi);
+}
+#settings-btn[aria-expanded="true"]::before,
+#downloads-btn[aria-expanded="true"]::before {
+  opacity: 1;
+  transform: scale(1);
+  background: var(--accent-soft);
+}
+
+
+/* ---------- 6c. Bookmarks toolbar -----------------------------------------
+   A compact shelf of "chip" cards rather than plain text links: each one
+   is a small glassy surface of its own (resting background + hairline
+   border) that lifts and picks up an accent edge on hover, echoing the
+   same elevated-surface language as the toolbar's address bar and the
+   panel/menu family above. A soft edge fade hints that the shelf scrolls
+   when there are more bookmarks than fit. */
+#bookmarks-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 var(--sp-3);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  /* No border or background of its own, and no dividing line above it
+     either — it's the same continuous #chrome surface (shared opaque
+     background + the #aurora wash now tuned to actually reach down this
+     far, see #aurora above) as the tab row and toolbar, just a shelf
+     within that one surface rather than a separate bar stacked underneath.
+     The single real divider between chrome and page is #chrome::after,
+     which tracks whichever row actually ends up last. */
+  -webkit-app-region: no-drag;
+  /* Fade the first/last few bookmarks toward transparent so a scrollable
+     shelf reads as "more to the side" rather than abruptly clipped. Harmless
+     no-op when everything already fits (nothing sits in the faded zone). */
+  mask-image: linear-gradient(90deg, transparent 0, #000 var(--sp-3), #000 calc(100% - var(--sp-3)), transparent 100%);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 var(--sp-3), #000 calc(100% - var(--sp-3)), transparent 100%);
+}
+#bookmarks-bar::-webkit-scrollbar { display: none; }
+
+.bm-chip {
+  position: relative;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 172px;
+  height: 26px;
+  padding: 0 11px 0 7px;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  background: var(--glass);
+  box-shadow: inset 0 0 0 1px var(--border);
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
+}
+
+.bm-chip:hover {
+  background: color-mix(in srgb, var(--accent) 10%, var(--glass-hover));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent-mid) 70%, var(--border-strong));
+  color: var(--text);
+  transform: translateY(-1px);
+}
+.bm-chip:active {
+  background: color-mix(in srgb, var(--accent) 16%, var(--glass-press));
+  transform: translateY(0) scale(0.97);
+}
+
+.bm-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 5px;
+  overflow: hidden;
+  background: color-mix(in srgb, white 4%, transparent);
+}
+.bm-icon img { width: 14px; height: 14px; border-radius: 3px; object-fit: contain; }
+.bm-icon .icon { width: 13px; height: 13px; stroke-width: 1.8; color: var(--text-faint); }
+.bm-chip:hover .bm-icon .icon { color: var(--accent-hi); }
+
+.bm-label {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  letter-spacing: 0.1px;
+}
+
+/* Bookmarks-bar overflow button — same chip language, icon-only, pinned to
+   the end of the bar by always being appended last in layoutBookmarksBar().
+   It never shrinks or scrolls away, so overflowing bookmarks stay reachable
+   at a fixed, predictable spot regardless of how many are hidden. */
+.bm-overflow-btn {
+  flex: none;
+  padding: 0 8px;
+  color: var(--text-faint);
+}
+.bm-overflow-btn .icon { width: 14px; height: 14px; stroke-width: 2; }
+.bm-overflow-btn[aria-expanded="true"] {
+  background: color-mix(in srgb, var(--accent) 14%, var(--glass-hover));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent-mid) 70%, var(--border-strong));
+  color: var(--accent-hi);
+}
+
+
+/* ==========================================================================
+   Slide-out panel family (tab list / downloads / browser menu)
+   ----------------------------------------------------------------------------
+   Deliberately built on the SAME visual + animation language as #ctx-menu
+   above (glassy blurred surface, accent sheen, consistent easing/scale/
+   opacity, growing outward from whatever button opened it) so every
+   overlay/popup system in the browser reads as one family, per the brief.
+   ========================================================================== */
+.panel-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+}
+.panel-overlay.panel-overlay-open { display: block; }
+
+.panel {
+  --panel-ox: right;
+  position: absolute;
+  width: 300px;
+  max-height: min(70vh, 560px);
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--r-lg);
+  background:
+    linear-gradient(165deg,
+      color-mix(in srgb, var(--bg-2) 92%, var(--accent) 5%) 0%,
+      color-mix(in srgb, var(--bg-2) 97%, white 1%) 45%,
+      var(--bg-2) 100%);
+  border: 1px solid color-mix(in srgb, var(--border-strong) 80%, var(--accent) 12%);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--text) 6%, transparent),
+    0 2px 6px -2px rgba(0, 0, 0, 0.5),
+    0 20px 48px -16px rgba(0, 0, 0, 0.65),
+    0 0 36px -18px var(--accent-glow);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  overflow: hidden;
+  transform-origin: var(--panel-ox) top;
+}
+
+.panel-wide { width: 360px; }
+
+@keyframes panel-in {
+  from { opacity: 0; transform: scale(0.95) translateY(-8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes panel-out {
+  from { opacity: 1; transform: scale(1) translateY(0); }
+  to   { opacity: 0; transform: scale(0.96) translateY(-6px); }
+}
+.panel.panel-show { animation: panel-in 170ms var(--ease) forwards; }
+.panel.panel-hide { animation: panel-out 120ms var(--ease) forwards; pointer-events: none; }
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: none;
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.panel-title {
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--text);
+  letter-spacing: 0.01em;
+}
+.panel-text-btn {
+  border: 0;
+  background: transparent;
+  color: var(--text-faint);
+  font: inherit;
+  font-size: 11.5px;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: var(--r-sm);
+  transition: color var(--dur-fast) var(--ease), background-color var(--dur-fast) var(--ease);
+}
+.panel-text-btn:hover { color: var(--accent-hi); background: var(--accent-soft); }
+
+.panel-body {
+  overflow-y: auto;
+  padding: 6px;
+  scrollbar-width: thin;
+}
+.panel-body::-webkit-scrollbar { width: 8px; }
+.panel-body::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
+
+.panel-empty {
+  padding: 28px 12px;
+  text-align: center;
+  color: var(--text-faint);
+  font-size: 12.5px;
+}
+
+
+/* ---------- Tab-list panel rows ------------------------------------------ */
+/* Positioned so the drag insertion indicator (absolute, appended straight
+   into this element — see beginTabListDrag in renderer.js) is placed
+   relative to the row list itself, and keeps tracking correctly even while
+   the body is mid-scroll (standard "absolute child of a relatively
+   positioned, scrollable container" pattern). */
+#tab-list-body { position: relative; }
+
+.tl-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  margin: 1px 0;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+.tl-row:hover { background: var(--bg-3); color: var(--text); }
+.tl-sep { height: 1px; margin: 4px 8px; background: var(--border); }
+.tl-new-tab .tl-icon .icon { color: var(--text-faint); }
+.tl-row.active {
+  background: color-mix(in srgb, var(--accent) 14%, var(--bg-3));
+  color: var(--text);
+  box-shadow: inset 2.5px 0 0 var(--accent);
+}
+.tl-icon { flex: none; width: 16px; height: 16px; display: grid; place-items: center; }
+.tl-icon img { width: 16px; height: 16px; border-radius: 3px; object-fit: contain; }
+.tl-icon .icon { width: 15px; height: 15px; stroke-width: 1.7; color: var(--text-faint); }
+.tl-row.active .tl-icon .icon { color: var(--accent-hi); }
+.tl-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.tl-close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  color: var(--text-faint);
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease), background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+.tl-close .icon { width: 10px; height: 10px; stroke-width: 2.2; }
+.tl-row:hover .tl-close { opacity: 1; }
+.tl-close:hover { background: var(--glass-press); color: var(--text); }
+
+/* ---------- Tab-list panel drag-to-reorder -------------------------------- */
+/* The row currently being dragged: lifted visually above its neighbors and
+   tracking the pointer via a JS-applied translateY (see beginTabListDrag in
+   renderer.js). No CSS transition on transform here — it must follow the
+   pointer 1:1 with zero lag; neighbors are what animate (via .tl-row-settling
+   below), not the dragged row itself. */
+.tl-row.tl-dragging {
+  position: relative;
+  z-index: 5;
+  background: var(--bg-3);
+  box-shadow: 0 6px 16px -4px rgba(0, 0, 0, 0.45), 0 0 0 1px var(--border-strong);
+  cursor: grabbing;
+}
+.tl-row.tl-dragging .tl-close { opacity: 0; }
+/* Neighbors sliding out of the way mid-drag (FLIP-style settle) */
+.tl-row.tl-row-settling { transition: transform 150ms var(--ease); }
+#tab-list-body.tl-has-drag .tl-row:not(.tl-dragging) { cursor: default; }
+
+/* Clear insertion indicator: a thin accent bar shown between rows at the
+   position the dragged tab would land. Positioned by JS (top/left/width). */
+.tl-insert-indicator {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 6px 0 var(--accent-glow);
+  pointer-events: none;
+  z-index: 6;
+}
+
+
+/* ---------- Downloads panel rows ----------------------------------------- */
+.dl-row {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 10px;
+  margin: 1px 0;
+  border-radius: var(--r-sm);
+  transition: background-color var(--dur-fast) var(--ease);
+}
+.dl-row.dl-clickable { cursor: pointer; }
+.dl-row.dl-clickable:hover { background: var(--bg-3); }
+
+.dl-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  margin-top: 1px;
+  border-radius: var(--r-sm);
+  background: var(--glass);
+  color: var(--text-dim);
+}
+.dl-icon .icon { width: 15px; height: 15px; stroke-width: 1.7; }
+.dl-row.dl-completed .dl-icon { color: var(--accent-hi); background: var(--accent-soft); }
+.dl-row.dl-cancelled .dl-icon,
+.dl-row.dl-interrupted .dl-icon { color: #e5898f; }
+
+.dl-main { flex: 1; min-width: 0; }
+.dl-name {
+  font-size: 12.5px;
+  font-weight: 560;
+  color: var(--text);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.dl-meta {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+/* Progress bar: dark track, Gloza-green fill, smooth live updates. */
+.dl-progress-track {
+  margin-top: 7px;
+  height: 4px;
+  border-radius: var(--r-pill);
+  background: var(--bg-3);
+  overflow: hidden;
+}
+.dl-progress-fill {
+  height: 100%;
+  border-radius: var(--r-pill);
+  background: linear-gradient(90deg, var(--accent), var(--accent-hi));
+  transition: width 220ms linear;
+}
+.dl-progress-indeterminate {
+  width: 35% !important;
+  animation: dl-indeterminate 1.3s ease-in-out infinite;
+}
+@keyframes dl-indeterminate {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(280%); }
+}
+
+.dl-autoopen {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--text-faint);
+  cursor: pointer;
+  user-select: none;
+}
+.dl-autoopen input {
+  accent-color: var(--accent);
+  width: 13px;
+  height: 13px;
+  cursor: pointer;
+}
+
+.dl-action-btn {
+  flex: none;
+  border: 0;
+  background: var(--glass);
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 11px;
+  padding: 5px 9px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+.dl-action-btn:hover { background: var(--glass-hover); color: var(--text); }
+
+.dl-actions { display: flex; gap: 2px; flex: none; }
+.dl-icon-btn {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  background: transparent;
+}
+.dl-icon-btn:hover { background: var(--glass-hover); }
+.dl-icon-btn .icon { width: 13px; height: 13px; stroke-width: 1.8; }
+
+
+/* ---------- History panel (Part 3A: search, range-clear, multi-select) --- */
+.panel-xwide { width: 420px; }
+
+.panel-text-btn-danger { color: #e5898f; }
+.panel-text-btn-danger:hover { background: color-mix(in srgb, #e5484d 16%, transparent); color: #e5898f; }
+.panel-text-btn:disabled { opacity: 0.4; cursor: default; background: none; }
+
+.hist-header-actions { display: flex; align-items: center; gap: 2px; }
+
+.hist-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.hist-search-wrap {
+  position: relative;
+  flex: 1 1 140px;
+  min-width: 120px;
+  display: flex;
+  align-items: center;
+}
+.hist-search-wrap svg {
+  position: absolute;
+  left: 8px;
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: var(--text-faint);
+  stroke-width: 1.6;
+  pointer-events: none;
+}
+.hist-search-wrap input {
+  width: 100%;
+  padding: 6px 8px 6px 26px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-3);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+}
+.hist-search-wrap input:focus-visible { outline: 2px solid var(--accent-hi); outline-offset: 1px; }
+
+#history-range-select {
+  flex: none;
+  padding: 6px 7px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-3);
+  color: var(--text);
+  font: inherit;
+  font-size: 11.5px;
+  cursor: pointer;
+  max-width: 108px;
+}
+#history-range-select:focus-visible { outline: 2px solid var(--accent-hi); outline-offset: 1px; }
+
+.hist-select-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+.hist-select-all {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--text-dim);
+  cursor: pointer;
+  user-select: none;
+}
+.hist-select-all input {
+  accent-color: var(--accent);
+  width: 13px;
+  height: 13px;
+  cursor: pointer;
+}
+
+.hist-group-header {
+  padding: 8px 10px 4px;
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.dl-row .hist-row-check {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  margin-top: 8px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+
+/* ---------- Browser menu panel -------------------------------------------- */
+/* Widened into two side-by-side columns (see buildBrowserMenu in renderer.js)
+   instead of the old single 250px-wide scrolling list, so every existing
+   option is visible at once with no internal scrollbar. max-height is kept
+   as a generous safety-net cap, not something the content is expected to
+   actually hit — see .menu-columns/.menu-col below for the layout itself. */
+#browser-menu-panel { width: 262px; max-height: calc(100vh - 64px); }
+#browser-menu-body { padding: 6px; overflow-y: auto; }
+
+.menu-columns {
+  display: flex;
+  flex-direction: column;   /* one single column */
+  align-items: stretch;
+}
+.menu-col {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+/* Thin vertical rule between the two columns, matching the horizontal
+   .menu-sep's look so the two-column split reads as intentional. */
+.menu-col-divider {
+  flex: none;
+  height: 1px;
+  margin: 5px 10px;
+  background: linear-gradient(90deg, transparent, var(--border-strong) 12%, var(--border-strong) 88%, transparent);
+}
+
+.menu-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  margin: 1px 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--r-sm);
+  transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+.menu-item:hover { background: color-mix(in srgb, var(--accent) 15%, var(--bg-3)); }
+.menu-item-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  color: var(--text-dim);
+}
+.menu-item-icon .icon { width: 15px; height: 15px; stroke-width: 1.7; }
+.menu-item:hover .menu-item-icon { color: var(--accent-hi); }
+.menu-item-label { flex: 1; }
+/* Disclosure caret for a menu row that opens a further list of options
+   (e.g. "Bookmarks Bar" → Always Show / Show Only on New Tab / Never Show) */
+.menu-item-caret {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  color: var(--text-faint);
+}
+
+.menu-sep {
+  height: 1px;
+  margin: 6px 10px;
+  background: linear-gradient(90deg, transparent, var(--border-strong) 12%, var(--border-strong) 88%, transparent);
+}
+
+/* "Exit" — a destructive, session-ending action gets a quiet red tint on
+   hover so it reads as different in kind from every other row, without
+   shouting about it while the menu is just sitting open. */
+.menu-item.menu-item-danger::after { background: #e5484d; }
+.menu-item.menu-item-danger:hover:not(:disabled) .menu-item-icon { background: color-mix(in srgb, #e5484d 18%, transparent); }
+.menu-item.menu-item-danger:hover:not(:disabled) { background: color-mix(in srgb, #e5484d 18%, var(--bg-3)); color: #ffb4b6; }
+.menu-item.menu-item-danger:hover:not(:disabled) .menu-item-icon { color: #ff8a8d; }
+
+.menu-zoom-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: default;
+  padding: 4px;
+}
+.menu-item.menu-zoom-row:hover { background: transparent; }
+.menu-zoom-row::after { display: none; }
+.menu-zoom-btn {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: var(--glass);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+.menu-zoom-btn .icon { width: 14px; height: 14px; stroke-width: 2; }
+.menu-zoom-btn:hover { background: var(--accent-soft); color: var(--accent-hi); }
+.menu-zoom-label {
+  flex: 1;
+  height: 32px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease);
+}
+.menu-zoom-label:hover { background: var(--glass-hover); }
+
+
+/* ==========================================================================
+   Custom Context Menu
+   ----------------------------------------------------------------------------
+   A floating, glassy panel in the Gloza design language rather than a
+   stock Chromium menu: layered translucent surface with a faint aurora
+   sheen, an accent "rail" that sweeps in on the focused/hovered row, and
+   two visual tiers (.ctx-item-primary for the actions worth reaching for
+   first, .ctx-item-secondary for power-user actions pushed to the back) so
+   the eye finds the important stuff first. Entrance direction/origin is set
+   per-open from renderer.js (via --ctx-ox/--ctx-oy/--ctx-slide-x/-y) so the
+   panel always grows outward from the cursor, even when flipped to stay on
+   screen.
+   ========================================================================== */
+
+/* Full-window transparent overlay so outside-clicks are captured */
+#ctx-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+}
+
+#ctx-menu {
+  --ctx-ox: left;
+  --ctx-oy: top;
+  --ctx-slide-x: 0px;
+  --ctx-slide-y: -6px;
+
+  position: absolute;
+  min-width: 222px;
+  max-width: 310px;
+  padding: 6px;
+  border-radius: var(--r-lg);
+  background:
+    linear-gradient(165deg,
+      color-mix(in srgb, var(--bg-2) 92%, var(--accent) 5%) 0%,
+      color-mix(in srgb, var(--bg-2) 97%, white 1%) 45%,
+      var(--bg-2) 100%);
+  border: 1px solid color-mix(in srgb, var(--border-strong) 80%, var(--accent) 12%);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--text) 6%, transparent),
+    0 2px 6px -2px rgba(0, 0, 0, 0.5),
+    0 18px 44px -14px rgba(0, 0, 0, 0.65),
+    0 0 34px -18px var(--accent-glow);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  overflow: hidden;
+  transform-origin: var(--ctx-ox) var(--ctx-oy);
+}
+
+/* Faint directional sheen echoing the toolbar's aurora, anchored to
+   whichever corner the menu is growing from. Purely decorative, never
+   intercepts pointer events. */
+#ctx-menu::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(120px 90px at var(--ctx-ox) var(--ctx-oy),
+    color-mix(in srgb, var(--accent) 14%, transparent), transparent 70%);
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Appear / dismiss animation. Slide direction is flipped per-axis by
+   renderer.js so the panel always grows outward from the click point. */
+@keyframes ctx-in {
+  from { opacity: 0; transform: scale(0.94) translate(var(--ctx-slide-x), var(--ctx-slide-y)); }
+  to   { opacity: 1; transform: scale(1)    translate(0, 0); }
+}
+@keyframes ctx-out {
+  from { opacity: 1; transform: scale(1)     translate(0, 0); }
+  to   { opacity: 0; transform: scale(0.96) translate(calc(var(--ctx-slide-x) * 0.4), calc(var(--ctx-slide-y) * 0.4)); }
+}
+
+#ctx-menu.ctx-show { animation: ctx-in 160ms var(--ease) forwards; }
+#ctx-menu.ctx-hide { animation: ctx-out 110ms var(--ease) forwards; pointer-events: none; }
+
+.ctx-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin: 1px 0;
+  padding: 7px 10px 7px 16px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--r-sm);
+  transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+  user-select: none;
+  z-index: 1;
+}
+
+/* Accent "rail" that sweeps in on the focused/hovered row — the same
+   affordance language as the active tab's accent line. */
+.ctx-item::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 22%;
+  bottom: 22%;
+  width: 2.5px;
+  border-radius: var(--r-pill);
+  background: var(--accent);
+  opacity: 0;
+  transform: scaleY(0.4);
+  transition: opacity var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+}
+
+.ctx-item:hover:not(:disabled),
+.ctx-item:focus-visible {
+  background: color-mix(in srgb, var(--accent) 15%, var(--bg-3));
+  color: var(--text);
+  outline: none;
+}
+
+.ctx-item:hover:not(:disabled)::after,
+.ctx-item:focus-visible::after {
+  opacity: 1;
+  transform: scaleY(1);
+}
+
+.ctx-item:active:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 26%, var(--bg-3));
+  transform: scale(0.99);
+}
+
+.ctx-item:disabled {
+  color: var(--text-faint);
+  cursor: default;
+}
+
+.ctx-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--r-sm);
+  color: var(--text-dim);
+  background: transparent;
+  transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+.ctx-item:hover:not(:disabled) .ctx-icon,
+.ctx-item:focus-visible .ctx-icon {
+  color: var(--accent-hi);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+.ctx-item:disabled .ctx-icon {
+  color: var(--text-faint);
+  background: transparent;
+}
+
+.ctx-icon svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  overflow: visible;
+}
+
+.ctx-label {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Right-aligned keyboard shortcut hint (Cut/Copy/Paste/Select All). */
+.ctx-shortcut {
+  flex: none;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  color: var(--text-faint);
+  transition: color var(--dur-fast) var(--ease);
+}
+.ctx-item:hover:not(:disabled) .ctx-shortcut,
+.ctx-item:focus-visible .ctx-shortcut {
+  color: var(--text-dim);
+}
+.ctx-item:disabled .ctx-shortcut {
+  color: var(--text-faint);
+  opacity: 0.6;
+}
+
+/* Primary tier — the action most people reach for first in this context
+   (opening something, reloading, bookmarking) gets a resting accent tint
+   and slightly heavier label so it reads as the default choice. */
+.ctx-item-primary:not(:disabled) .ctx-icon {
+  color: var(--accent-hi);
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+}
+.ctx-item-primary .ctx-label {
+  font-weight: 560;
+  letter-spacing: 0.1px;
+}
+
+/* Secondary tier — power-user actions (View Source, Inspect) are pushed
+   back visually so they don't compete with everyday actions. */
+.ctx-item-secondary {
+  color: var(--text-dim);
+}
+.ctx-item-secondary .ctx-label {
+  font-size: 12.5px;
+}
+.ctx-item-secondary:not(:disabled) .ctx-icon {
+  color: var(--text-faint);
+}
+.ctx-item-secondary:hover:not(:disabled),
+.ctx-item-secondary:focus-visible {
+  color: var(--text);
+}
+
+/* Checked/active tier — used for the currently-selected option in a flat
+   radio-style group of menu items (e.g. the bookmarks-bar visibility
+   options). Reuses the primary tier's accent tint rather than inventing a
+   new visual language, since both mean "this is the one that's on". */
+.ctx-item-checked:not(:disabled) .ctx-icon {
+  color: var(--accent-hi);
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+}
+.ctx-item-checked .ctx-label {
+  color: var(--accent-hi);
+  font-weight: 560;
+}
+
+.ctx-sep {
+  height: 1px;
+  margin: 5px 10px;
+  background: linear-gradient(90deg,
+    transparent,
+    var(--border-strong) 12%,
+    var(--border-strong) 88%,
+    transparent);
+}
+
+
+/* ==========================================================================
+   Bookmark bar: folder chips, drag-and-drop states
+   ========================================================================== */
+.bm-chip.bm-folder .bm-icon .icon { color: var(--text-faint); }
+.bm-chip.bm-folder:hover .bm-icon .icon { color: var(--accent-hi); }
+.bm-caret {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  stroke-width: 2.4;
+  color: var(--text-faint);
+  transform: rotate(90deg);
+  transition: color var(--dur-fast) var(--ease);
+}
+.bm-chip:hover .bm-caret { color: var(--text-dim); }
+.bm-chip[aria-expanded="true"] {
+  background: color-mix(in srgb, var(--accent) 14%, var(--glass-hover));
+  box-shadow: inset 0 0 0 1px var(--accent-mid);
+  color: var(--text);
+}
+
+/* Drag-to-reorder (pointer-based, see beginBookmarkDrag in renderer.js).
+   A dragged chip lifts slightly and ignores pointer events on itself so the
+   element underneath can be hit-tested for drop targeting. */
+.bm-chip.bm-dragging {
+  position: relative;
+  z-index: 30;
+  opacity: 0.85;
+  pointer-events: none;
+  transition: none;
+  box-shadow: 0 8px 18px -8px rgba(0, 0, 0, 0.55), inset 0 0 0 1px var(--accent-mid);
+}
+.bm-chip.bm-drop-target {
+  background: color-mix(in srgb, var(--accent) 22%, var(--glass-hover));
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+  transform: scale(1.04);
+}
+/* Thin insertion caret shown between two chips while dragging, instead of
+   reflowing the whole bar on every pointer move. */
+.bm-insertion {
+  /* Positioned by renderer.js as a fixed overlay (left/top/width/height) so
+     it takes no layout space and can never shift the items being measured. */
+  z-index: 60;
+  border-radius: 2px;
+  background: var(--accent-hi);
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+/* Same drag states as the bar's .bm-chip, reused on folder-popup .tl-row
+   items so drag-and-drop works identically inside an open folder. */
+.tl-row.bm-dragging {
+  position: relative;
+  z-index: 30;
+  opacity: 0.9;
+  pointer-events: none;
+  transition: none;
+  background: var(--glass-hover);
+  box-shadow: 0 8px 18px -8px rgba(0, 0, 0, 0.55), inset 0 0 0 1px var(--accent-mid);
+}
+.tl-row.bm-drop-target {
+  background: color-mix(in srgb, var(--accent) 22%, var(--glass-hover));
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+}
+
+
+/* ==========================================================================
+   Generic small floating menu (bookmark-bar / bookmark / folder right-click)
+   Same visual + animation language as #ctx-menu — see openBookmarkMenu in
+   renderer.js. Rules here only need to cover positioning/overlay specifics;
+   item styling (.ctx-item, .ctx-icon, .ctx-label, .ctx-sep, …) is shared.
+   ========================================================================== */
+#bm-menu-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9100;
+}
+#bm-menu-overlay.bm-menu-open { display: block; }
+
+#bm-menu {
+  --ctx-ox: left;
+  --ctx-oy: top;
+  --ctx-slide-x: 0px;
+  --ctx-slide-y: -6px;
+
+  position: absolute;
+  min-width: 200px;
+  max-width: 300px;
+  padding: 6px;
+  border-radius: var(--r-lg);
+  background:
+    linear-gradient(165deg,
+      color-mix(in srgb, var(--bg-2) 92%, var(--accent) 5%) 0%,
+      color-mix(in srgb, var(--bg-2) 97%, white 1%) 45%,
+      var(--bg-2) 100%);
+  border: 1px solid color-mix(in srgb, var(--border-strong) 80%, var(--accent) 12%);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--text) 6%, transparent),
+    0 2px 6px -2px rgba(0, 0, 0, 0.5),
+    0 18px 44px -14px rgba(0, 0, 0, 0.65),
+    0 0 34px -18px var(--accent-glow);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  overflow: hidden;
+  transform-origin: var(--ctx-ox) var(--ctx-oy);
+}
+#bm-menu.ctx-show { animation: ctx-in 160ms var(--ease) forwards; }
+#bm-menu.ctx-hide { animation: ctx-out 110ms var(--ease) forwards; pointer-events: none; }
+
+/* Submenu layer (e.g. tab menu's "Move" / "Close Multiple Tabs") — same
+   look as #bm-menu, floating independently so it isn't clipped by its
+   parent. See openSubmenu in renderer.js. */
+#bm-submenu-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9150; /* above #bm-menu-overlay's 9100 */
+  pointer-events: none;
+}
+#bm-submenu-overlay.bm-menu-open { display: block; }
+#bm-submenu-overlay .ctx-item,
+#bm-submenu-overlay #bm-submenu { pointer-events: auto; }
+
+#bm-submenu {
+  --ctx-ox: left;
+  --ctx-oy: top;
+  --ctx-slide-x: 0px;
+  --ctx-slide-y: 0px;
+  position: absolute;
+  min-width: 190px;
+  max-width: 280px;
+  padding: 6px;
+  border-radius: var(--r-lg);
+  background:
+    linear-gradient(165deg,
+      color-mix(in srgb, var(--bg-2) 92%, var(--accent) 5%) 0%,
+      color-mix(in srgb, var(--bg-2) 97%, white 1%) 45%,
+      var(--bg-2) 100%);
+  border: 1px solid color-mix(in srgb, var(--border-strong) 80%, var(--accent) 12%);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--text) 6%, transparent),
+    0 2px 6px -2px rgba(0, 0, 0, 0.5),
+    0 18px 44px -14px rgba(0, 0, 0, 0.65),
+    0 0 34px -18px var(--accent-glow);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  overflow: hidden;
+  transform-origin: var(--ctx-ox) var(--ctx-oy);
+}
+#bm-submenu.ctx-show { animation: ctx-in 140ms var(--ease) forwards; }
+#bm-submenu.ctx-hide { animation: ctx-out 100ms var(--ease) forwards; pointer-events: none; }
+
+/* Chevron on a menu row that opens a submenu, right-aligned like a native
+   menu's submenu arrow. */
+.ctx-item-arrow {
+  margin-left: auto;
+  flex: none;
+  width: 12px;
+  height: 12px;
+  opacity: 0.55;
+}
+.ctx-item.ctx-item-open-submenu { background: var(--glass-hover); color: var(--text); }
+
+
+/* ==========================================================================
+   Modal dialogs (bookmark creation/edit, rename/new-folder prompt)
+   ----------------------------------------------------------------------------
+   Centered rather than anchored to a button — several different triggers
+   (star button, context-menu "Edit", "New folder…") open the same dialog.
+   Lives inside the toolbar view like every other overlay here, so it needs
+   the same expand-to-cover-the-window treatment (window.browser.expandPanelSurface)
+   before it can render outside the thin toolbar strip.
+   ========================================================================== */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9200;
+  align-items: center;
+  justify-content: center;
+  /* Soft scrim so the dialog reads as modal without fully blanking the page
+     behind it (which is still visible through the expanded, transparent
+     toolbar view — see expandToolbarForMenu in main.js). */
+  background: color-mix(in srgb, black 38%, transparent);
+}
+.modal-overlay.modal-overlay-open { display: flex; }
+
+.modal {
+  width: min(380px, calc(100vw - 48px));
+  max-height: min(80vh, 560px);
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--r-lg);
+  background:
+    linear-gradient(165deg,
+      color-mix(in srgb, var(--bg-2) 94%, var(--accent) 5%) 0%,
+      color-mix(in srgb, var(--bg-2) 97%, white 1%) 45%,
+      var(--bg-2) 100%);
+  border: 1px solid color-mix(in srgb, var(--border-strong) 80%, var(--accent) 12%);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--text) 6%, transparent),
+    0 2px 6px -2px rgba(0, 0, 0, 0.5),
+    0 28px 64px -20px rgba(0, 0, 0, 0.7),
+    0 0 48px -20px var(--accent-glow);
+  backdrop-filter: blur(22px) saturate(1.4);
+  -webkit-backdrop-filter: blur(22px) saturate(1.4);
+  transform: scale(0.95) translateY(6px);
+  opacity: 0;
+}
+.modal-sm { width: min(320px, calc(100vw - 48px)); }
+
+@keyframes modal-in {
+  from { opacity: 0; transform: scale(0.95) translateY(6px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes modal-out {
+  from { opacity: 1; transform: scale(1) translateY(0); }
+  to   { opacity: 0; transform: scale(0.96) translateY(4px); }
+}
+.modal.modal-show { animation: modal-in 180ms var(--ease) forwards; }
+.modal.modal-hide { animation: modal-out 120ms var(--ease) forwards; pointer-events: none; }
+
+.modal-head {
+  flex: none;
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13.5px;
+  font-weight: 650;
+  color: var(--text);
+}
+
+.modal-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.modal-field { display: flex; flex-direction: column; gap: 6px; position: relative; }
+.modal-field-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.modal-field input[type="text"] {
+  height: 36px;
+  padding: 0 11px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border-strong);
+  background: var(--bg-1);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+  transition: box-shadow var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+}
+.modal-field input[type="text"]:focus {
+  border-color: var(--accent-mid);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.dest-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 11px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border-strong);
+  background: var(--bg-1);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+}
+.dest-btn:hover { background: var(--bg-3); }
+.dest-btn[aria-expanded="true"] { border-color: var(--accent-mid); box-shadow: 0 0 0 3px var(--accent-soft); }
+.dest-btn .icon { width: 15px; height: 15px; stroke-width: 1.8; color: var(--text-faint); flex: none; }
+.dest-btn #bm-dialog-dest-label { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; text-align: left; }
+.dest-caret {
+  width: 10px !important;
+  height: 10px !important;
+  transform: rotate(90deg);
+  transition: transform var(--dur-fast) var(--ease);
+}
+.dest-btn[aria-expanded="true"] .dest-caret { transform: rotate(-90deg); }
+
+.dest-list {
+  max-height: 180px;
+  overflow-y: auto;
+  padding: 4px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-1);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.dest-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+.dest-row:hover { background: var(--bg-3); color: var(--text); }
+.dest-row.active { background: color-mix(in srgb, var(--accent) 16%, var(--bg-3)); color: var(--text); }
+.dest-row .icon { width: 14px; height: 14px; stroke-width: 1.8; flex: none; color: var(--text-faint); }
+.dest-row.dest-row-new { color: var(--accent-hi); border-top: 1px solid var(--border); margin-top: 3px; padding-top: 8px; border-radius: 0 0 6px 6px; }
+.dest-row.dest-row-new .icon { color: var(--accent-hi); }
+
+.new-folder-row { display: flex; gap: 6px; }
+.new-folder-row input { flex: 1; min-width: 0; }
+
+.modal-btn-sm {
+  height: 34px;
+  padding: 0 12px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border-strong);
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter var(--dur-fast) var(--ease), background-color var(--dur-fast) var(--ease);
+}
+.modal-btn-sm:hover { filter: brightness(1.08); }
+.modal-btn-sm.modal-btn-ghost {
+  background: transparent;
+  color: var(--text-dim);
+  border-color: var(--border-strong);
+}
+.modal-btn-sm.modal-btn-ghost:hover { background: var(--bg-3); color: var(--text); }
+
+.modal-actions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px 16px;
+  border-top: 1px solid var(--border);
+}
+.modal-actions-spacer { flex: 1; }
+.modal-btn {
+  height: 36px;
+  padding: 0 16px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border-strong);
+  background: var(--glass);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease), filter var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+}
+.modal-btn:active { transform: scale(0.97); }
+.modal-btn-ghost { background: transparent; color: var(--text-dim); }
+.modal-btn-ghost:hover { background: var(--bg-3); color: var(--text); }
+.modal-btn-primary {
+  background: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 60%, var(--border-strong));
+  color: #fff;
+}
+.modal-btn-primary:hover { filter: brightness(1.08); }
+
+
+/* ==========================================================================
+   Address-bar dropdown rows (reuses .panel / .panel-body from the shared
+   panel family — see index.html #address-dropdown-overlay)
+   ========================================================================== */
+.ad-section-label {
+  padding: 8px 10px 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.ad-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  margin: 1px 0;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+.ad-row:hover, .ad-row.ad-row-active { background: var(--bg-3); color: var(--text); }
+.ad-row .icon { width: 14px; height: 14px; stroke-width: 1.8; flex: none; color: var(--text-faint); }
+.ad-row img { width: 14px; height: 14px; border-radius: 3px; object-fit: contain; flex: none; }
+.ad-row-label { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.ad-row-kind {
+  flex: none;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-faint);
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease);
+}
+.ad-row:hover .ad-row-kind, .ad-row.ad-row-active .ad-row-kind { opacity: 1; }
+.ad-match { color: var(--accent); font-weight: 700; background: transparent; }
+.ad-loading { font-style: italic; }
+
+/* ROOT CAUSE of "clicking the URL bar freezes the browser": .panel-overlay
+   (below) is `position:fixed; inset:0` with the browser's default
+   `pointer-events: auto`, so the instant the address dropdown opens it
+   becomes a full-window click-catcher — including the strip at the very
+   top where the address bar itself visually sits. The outside-click-to-
+   close behavior for every panel in this family (see the `document`-level
+   'pointerdown' listeners in renderer.js — closePanel's and
+   closeAddressDropdown's) was ALREADY implemented via `.contains(event.target)`
+   checks on `document`, never via a click handler on the overlay element
+   itself, so the overlay intercepting clicks was never actually load-bearing
+   for anything — it was just silently swallowing every click aimed at the
+   input underneath it. That's the "freeze": the first click opens the
+   dropdown and focuses the input, but the very next click anywhere near
+   the address bar (to reposition the caret, select text, click again) hits
+   this transparent overlay instead and does nothing, because the overlay
+   sits on top in paint order. Clicking a row *inside* the dropdown "worked"
+   only because the row itself is a child of the overlay and explicitly
+   re-enables pointer events below.
+   Fix: make the backdrop pass clicks through by default, and only the
+   actual panel surface (where something is visibly drawn) catches them.
+   Scoped to the address dropdown specifically — the bookmark/prompt modals
+   reuse `.panel-overlay` too, but those genuinely want to block the page
+   behind them (modal semantics) and have their own backdrop-click-to-close
+   handler bound directly on the overlay (see renderer.js), so they're left
+   untouched. */
+#address-dropdown-overlay { pointer-events: none; }
+#address-dropdown-overlay .panel { pointer-events: auto; }
+
+
+/* ==========================================================================
+   Shield (native ad/tracker blocker) toolbar button + popup — Part 2.
+   Reuses the existing .icon-btn / .panel family so it reads as the same
+   control set as Downloads/Bookmarks, just with its own state colors.
+   ========================================================================== */
+
+/* Protection ON for this site (the common case): a calm green shield. */
+#shield-btn.protected { color: var(--accent-hi); }
+/* Protection disabled for THIS site only (a per-site exception) — amber,
+   so it's visually distinct from "globally off" (red) at a glance. */
+#shield-btn.site-disabled { color: #e3a23c; }
+/* Protection globally OFF — clearly "not protecting", not just neutral. */
+#shield-btn.globally-disabled { color: #e5898f; }
+#shield-btn[aria-expanded="true"] { color: var(--accent-hi); }
+#shield-btn[aria-expanded="true"]::before { opacity: 1; transform: scale(1); background: var(--accent-soft); }
+#shield-btn-badge { background: var(--accent); }
+#shield-btn.globally-disabled #shield-btn-badge { background: #8a8f8f; }
+
+/* ---------- Generic toggle switch, shared by the popup + Settings ------- */
+.shield-global-switch,
+.shield-site-switch-wrap {
+  position: relative;
+  display: inline-flex;
+  cursor: pointer;
+}
+.shield-global-switch input,
+.shield-site-switch-wrap input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  margin: 0;
+  cursor: pointer;
+}
+.switch-track {
+  display: inline-flex;
+  align-items: center;
+  width: 34px;
+  height: 20px;
+  padding: 2px;
+  border-radius: var(--r-pill);
+  background: var(--bg-3);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+  transition: background-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+}
+.switch-track-sm { width: 30px; height: 18px; }
+.switch-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--text-faint);
+  transform: translateX(0);
+  transition: transform var(--dur-fast) var(--ease), background-color var(--dur-fast) var(--ease);
+}
+.switch-track-sm .switch-thumb { width: 14px; height: 14px; }
+input:checked + .switch-track {
+  background: color-mix(in srgb, var(--accent) 55%, var(--bg-3));
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+input:checked + .switch-track .switch-thumb {
+  background: #fff;
+  transform: translateX(14px);
+}
+input:checked + .switch-track-sm .switch-thumb { transform: translateX(12px); }
+input:focus-visible + .switch-track { outline: 2px solid var(--accent-hi); outline-offset: 2px; }
+input:disabled + .switch-track { opacity: 0.45; cursor: default; }
+
+/* ---------- Popup body --------------------------------------------------- */
+.shield-panel .panel-header { padding-right: 12px; }
+#adblock-panel-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px 4px;
+}
+
+.shield-site-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--r-md);
+  background: var(--bg-3);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+.shield-site-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.shield-site-host {
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.shield-site-status { font-size: 11px; color: var(--text-faint); }
+
+.shield-stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+.shield-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 4px;
+  border-radius: var(--r-md);
+  background: var(--bg-3);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+.shield-stat-value { font-size: 15px; font-weight: 700; color: var(--accent-hi); }
+.shield-stat-label { font-size: 9.5px; color: var(--text-faint); text-align: center; line-height: 1.25; }
+
+.shield-error {
+  padding: 7px 9px;
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, #e5484d 16%, var(--bg-3));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #e5484d 45%, var(--border));
+  color: #f3a5a8;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.shield-lists-line {
+  padding: 2px 2px 6px;
+  color: var(--text-faint);
+  font-size: 10.5px;
+}
+
+.shield-panel-foot {
+  flex: none;
+  padding: 6px 8px 10px;
+  border-top: 1px solid var(--border);
+}
+.shield-settings-btn {
+  display: block;
+  width: 100%;
+  text-align: center;
+  font-size: 12px;
+  padding: 8px;
+  border-radius: var(--r-sm);
+  background: var(--bg-3);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+.shield-settings-btn:hover { background: var(--accent-soft); color: var(--accent-hi); }
+
+/* ==========================================================================
+   Find-in-page bar (Cmd/Ctrl+F). Reuses the .panel glassy-surface look
+   (see "Slide-out panel family" above) but ISN'T anchored to a button —
+   it pins itself to the window's top-right corner instead, like most
+   browsers' own find bars, via #find-bar-overlay (plain .panel-overlay,
+   no .panel-wide/.panel-xwide sizing) + fixed positioning on .find-bar
+   itself rather than the JS-computed left/top the anchored panels use.
+   ========================================================================== */
+#find-bar-overlay { pointer-events: none; }
+#find-bar-overlay.panel-overlay-open { pointer-events: auto; }
+.find-bar {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  width: auto;
+  max-height: none;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  transform-origin: top right;
+}
+.find-bar-icon {
+  width: 15px;
+  height: 15px;
+  color: var(--text-faint);
+  flex: none;
+  margin-left: 2px;
+}
+#find-bar-input {
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+  width: 180px;
+  padding: 4px 2px;
+  outline: none;
+}
+.find-bar-count {
+  font-size: 11px;
+  color: var(--text-faint);
+  min-width: 48px;
+  text-align: right;
+  padding-right: 2px;
+  white-space: nowrap;
+}
+.find-bar-btn { width: 26px; height: 26px; }
+.find-bar-btn:disabled { opacity: 0.35; cursor: default; }
+.find-bar-btn:disabled::before { opacity: 0 !important; }
+.find-bar-prev-btn .icon { transform: rotate(180deg); }
+.find-bar-no-match #find-bar-input { color: #f3a5a8; }

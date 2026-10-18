@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- This text shows as the tab's label -->
+  <title>New Tab</title>
+  <!-- Anti-FOUC: home.html's preload (home-preload.js, added in Part 1 for
+       the home-screen bookmark bridge) only exposes async ipcRenderer.invoke
+       calls, not a synchronous getter the way index.html/settings.html's
+       preloads do — so it still can't ask main.js for the saved theme
+       synchronously, ahead of its first paint, the way those pages do.
+       Instead main.js passes theme+accent as a query string on the
+       loadFile() that opens this page (see pushHomeData's `query` usage),
+       and this inline script — which runs and blocks HTML parsing before
+       the stylesheets below are even requested — applies them to <html>
+       synchronously. That's what keeps this page from always painting once
+       with the dark :root defaults first. window.__glozaHomeUpdate (below)
+       still re-applies the live values a moment later for a tab that was
+       already open when the theme changed. -->
+  <script>
+    (function () {
+      try {
+        var params = new URLSearchParams(location.search);
+        var theme = params.get('theme');
+        var accent = params.get('accent');
+        var root = document.documentElement;
+        if (accent) root.style.setProperty('--accent', accent);
+        root.dataset.theme = theme === 'light' ? 'light' : 'dark';
+        // Home Screen Settings (Part 2) — same anti-FOUC reasoning as
+        // theme/accent above: apply the saved bookmark-visibility,
+        // gradient and background preferences before the stylesheets even
+        // finish loading, so a hidden grid / disabled gradient / custom
+        // background never flashes the default look first. See
+        // __glozaHomeUpdate in home.js for the live-update counterpart and
+        // home.css for what these attributes/variables actually do.
+        root.dataset.bookmarksHidden = params.get('showBookmarks') === '0' ? '1' : '0';
+        root.dataset.gradient = params.get('showGradient') === '0' ? 'off' : 'on';
+        var bgMode = params.get('bgMode') || 'default';
+        root.dataset.bgMode = bgMode;
+        var bgColor = params.get('bgColor');
+        if (bgColor) root.style.setProperty('--home-bg-color', bgColor);
+        var bgImageUrl = params.get('bgImageUrl');
+        if (bgImageUrl) root.style.setProperty('--home-bg-image', 'url("' + bgImageUrl + '")');
+      } catch (e) { /* falls back to the dark :root default, then __glozaHomeUpdate */ }
+    })();
+  </script>
+  <link rel="stylesheet" href="theme.css" />
+  <link rel="stylesheet" href="home.css" />
+</head>
+<body>
+
+  <!-- Custom/color background paints here, behind the aurora glow and
+       scrim. Purely decorative — see home.css §1. -->
+  <div class="home-bg" aria-hidden="true"></div>
+  <!-- Darkens a custom picture/color just enough to keep bookmark names,
+       favicons and the plus-card legible on top of it (see home.css §1). -->
+  <div class="home-bg-scrim" aria-hidden="true"></div>
+
+  <!-- The glow behind everything. Purely decorative (see home.css). -->
+  <div class="aurora" aria-hidden="true"></div>
+
+  <!-- <main> is just a container that says "this is the page's main content" -->
+  <main class="start">
+
+    <header class="brand">
+      <!-- The Gloza mark. Swap this <svg> for an <img src="your-logo.png"> to use your own logo. -->
+      <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true">
+        <defs>
+          <linearGradient id="mark-grad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" style="stop-color: color-mix(in srgb, var(--accent) 55%, white)" />
+            <stop offset="1" style="stop-color: var(--accent)" />
+          </linearGradient>
+        </defs>
+        <rect x="1.5" y="1.5" width="21" height="21" rx="7" fill="url(#mark-grad)" />
+        <path d="M16.2 8.5A5.5 5.5 0 1 0 17.5 12H12.5" fill="none" stroke="#fff"
+              stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+
+      <!-- h1 = biggest heading. This is your browser's name — rename it here. -->
+      <h1 id="brand">GlozaNet</h1>
+      <p id="tagline">Browse beautifully.</p>
+    </header>
+
+    <!-- A <form> groups the input + button and lets Enter submit it.
+         home.js listens for that submit and sends the search. -->
+    <form id="search-form" role="search">
+      <div class="search-field">
+        <!-- Clicking the icon or the empty space focuses the input -->
+        <label class="search-label">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="11" cy="11" r="7.5" /><path d="m21 21-4.3-4.3" />
+          </svg>
+          <input
+            id="search-input"
+            type="text"
+            placeholder="Search the web"
+            aria-label="Search the web"
+            autocomplete="off"
+            spellcheck="false"
+          />
+        </label>
+        <button class="search-submit" type="submit" aria-label="Search">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+        </button>
+      </div>
+    </form>
+
+    <!-- Home-screen bookmarks: always exactly 4 slots (a saved bookmark card,
+         or a "+" card for an empty slot). Independent from the bookmark
+         toolbar — see home.js / window.glozaHome / home-bookmarks:* in
+         main.js. Built entirely by home.js; nothing static goes here. -->
+    <nav id="quick-links" aria-label="Home screen bookmarks"></nav>
+
+  </main>
+
+  <!-- Add/Edit bookmark dialog — one dialog reused for both create and edit
+       (see openBookmarkDialog in home.js). -->
+  <div id="hb-dialog-overlay" class="hb-dialog-overlay" aria-hidden="true">
+    <form id="hb-dialog" class="hb-dialog" novalidate>
+      <div class="hb-dialog-head" id="hb-dialog-title">Add bookmark</div>
+      <div class="hb-dialog-body">
+        <label class="hb-field">
+          <span class="hb-field-label">Name</span>
+          <input id="hb-field-name" type="text" autocomplete="off" spellcheck="false" maxlength="60" required />
+        </label>
+        <label class="hb-field">
+          <span class="hb-field-label">Website URL</span>
+          <input id="hb-field-url" type="text" autocomplete="off" spellcheck="false" placeholder="example.com" required />
+        </label>
+        <p id="hb-dialog-error" class="hb-dialog-error" role="alert" hidden></p>
+      </div>
+      <div class="hb-dialog-actions">
+        <button type="button" id="hb-dialog-cancel" class="hb-btn hb-btn-ghost">Cancel</button>
+        <span class="hb-dialog-actions-spacer"></span>
+        <button type="submit" id="hb-dialog-save" class="hb-btn hb-btn-primary">Save</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Right-click context menu for a saved home-screen bookmark card. -->
+  <div id="hb-menu-overlay" class="hb-menu-overlay" aria-hidden="true">
+    <div id="hb-menu" class="hb-menu" role="menu"></div>
+  </div>
+  <!-- Slide-out submenu for the menu's "Move" row (see openSubmenu in home.js). -->
+  <div id="hb-submenu-overlay" class="hb-menu-overlay" aria-hidden="true">
+    <div id="hb-submenu" class="hb-menu hb-submenu" role="menu"></div>
+  </div>
+
+  <!-- Small transient toast for feedback that doesn't warrant a blocking
+       dialog (e.g. "home screen already has 4 bookmarks"). -->
+  <div id="hb-toast" class="hb-toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="home.js"></script>
+</body>
+</html>

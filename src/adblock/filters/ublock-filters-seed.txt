@@ -1,0 +1,55 @@
+! uBlock filters (youtube/high-traffic-site supplement) — bundled seed excerpt
+! Source: https://github.com/uBlockOrigin/uAssets/blob/master/filters/filters.txt
+! ("Filters optimized for uBlock, to be used along EasyList" — this is the
+! maintained supplementary list the uBlock Origin project itself uses
+! specifically for issues EasyList doesn't cover on high-traffic sites,
+! "Video Ads" (YouTube's category) explicitly included per the uAssets
+! project README.) Only ordinary (non-extended-syntax) lines verified
+! directly from the real list are included in this bundled seed excerpt;
+! the full list (fetched over the network — see filterlist-manager.js's
+! LIST_DEFINITIONS.ublockfilters) also contains some uBO-only extended
+! cosmetic syntax (:has-text(), :nth-ancestor(), ...) that this engine does
+! not execute — see engine.js's header notes and the handoff report for
+! why that's an accepted, documented limitation rather than a bug.
+youtube.com##.masthead-ad-control
+youtube.com##.ad-div
+youtube.com##.pyv-afc-ads-container
+youtube.com###promotion-shelf
+youtube.com###masthead-ad
+youtube.com##.ytp-ad-progress
+*_ad_$media,domain=youtube.com,3p
+google.*##.ads-ad
+
+! --- YouTube ad-serving/tracking network endpoints (youtube-adblock-gap
+! investigation) -----------------------------------------------------------
+! Added because EasyList/EasyPrivacy + the cosmetic rules above still let
+! real YouTube video ads through: those two lists' generic ad/tracker
+! domains (doubleclick.net, googlesyndication.com — both already in
+! easylist-seed.txt) cover YouTube's THIRD-PARTY ad partners, but YouTube
+! also drives ad selection/tracking through its OWN first-party endpoints,
+! which a generic list intentionally does not touch (blocking a whole
+! first-party domain is exactly what risks breaking the site). These are
+! the specific, narrow, well-documented YouTube-owned paths used only for
+! ad requests/impression-tracking, not video delivery itself:
+!   - /pagead/            -> ad-serving requests (YouTube's own proxy to
+!                            Google's ad system for in-player/masthead ads)
+!   - /api/stats/ads      -> ad impression/quartile tracking pings
+!   - /ptracking           -> ad click/progress tracking pings
+! None of these paths carry actual video/audio data, so blocking them does
+! not affect playback of the real video.
+! Deliberately NOT included here: anything on googlevideo.com. That is the
+! same CDN YouTube uses to serve the actual video/audio stream the player
+! needs, including (for many ad formats, especially server-side-inserted
+! ones) the ad segments themselves — there is no reliable, safe way to
+! distinguish an ad chunk from a content chunk by URL/domain alone, and a
+! wholesale ||googlevideo.com^ rule (or a guessed query-string pattern)
+! would risk silently breaking ordinary video playback, which the brief
+! explicitly rules out. Residual in-player ad UI from ads delivered this
+! way is handled by the separate DOM-level ad-skip/hide layer in
+! adblock/index.js (_applyCosmeticFiltering, which also injects
+! YOUTUBE_AD_SKIP_SCRIPT), NOT by a network rule — that layer is a
+! cosmetic supplement, not a network block, and is documented as such.
+||youtube.com/pagead/^
+||youtube.com/api/stats/ads^
+||youtube.com/ptracking^
+||s.youtube.com/api/stats/ads^
